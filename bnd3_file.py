@@ -1,13 +1,13 @@
 import io
 from _collections import OrderedDict
 from binary_file import BinaryFile
-from tpf_reader import TpfReader
+from tpf_file import TPFFile
 
 
-class BND3Reader(BinaryFile):
+class BND3File(BinaryFile):
     MAGIC_HEADER = b"BND3"
 
-    def process_file(self):
+    def extract_file(self):
         print("BND3: Reading file {}".format(self.path))
 
         manifest = {
@@ -28,13 +28,13 @@ class BND3Reader(BinaryFile):
 
         for i in range(self.to_int32(manifest['header']['entry_count'])):
             print("BND3: Reading entry #{}".format(i))
-            manifest['entries'].append(self.read_entry(version))
+            manifest['entries'].append(self._read_entry(version))
 
         manifest["end_header_pos"] = self.file.tell()
 
         return manifest
 
-    def read_entry(self, version):
+    def _read_entry(self, version):
         entry = {
             "header": OrderedDict([
                 ("record_sep", self.consume(0x40, 4)),
@@ -70,12 +70,49 @@ class BND3Reader(BinaryFile):
             print("BND3: Reading data, offset = {}, size = {}, filename = {}".format(
                 data_offset, data_size, entry['actual_filename'])
             )
-            if data.startswith(TpfReader.MAGIC_HEADER):
+            if data.startswith(TPFFile.MAGIC_HEADER):
                 with io.BytesIO(data) as tpf_buffer:
-                    entry['tpf'] = TpfReader(tpf_buffer, entry['actual_filename']).process_file()
+                    entry['tpf'] = TPFFile(tpf_buffer, entry['actual_filename']).extract_file()
             else:
                 self.write_data(entry['actual_filename'], data)
 
         self.file.seek(position)
 
         return entry
+
+    def create_file(self, manifest):
+        print("BND3: Writing file {}".format(self.path))
+
+        self.file.seek(manifest['end_header_pos'])
+
+        for entry in manifest['entries']:
+            print("BND3: Writing entry filename for {} at offset {}".format(entry['actual_filename'], self.file.tell()))
+            entry['header']['filename_offset'] = self.int32_bytes(self.file.tell())
+            self.write(entry['filename'].encode("shift_jis"), b"\x00")
+
+        manifest['header']['header_size'] = self.int32_bytes(self.file.tell())
+        self.write(b"\x00" * 4) # padding
+
+        for entry in manifest['entries']:
+            cur_position = self.file.tell()
+            print("BND3: Writing entry data for {} at offset {}".format(entry['actual_filename'], cur_position))
+            entry['header']['data_offset'] = self.int32_bytes(cur_position)
+
+            if 'tpf' in entry:
+                with io.BytesIO() as tpf_buffer:
+                    TPFFile(tpf_buffer, entry['actual_filename']).create_file(entry['tpf'])
+                    tpf_buffer.seek(0)
+                    self.write(tpf_buffer.read())
+            else:
+                self.write(open(entry['actual_filename'], "rb").read())
+
+            data_size = self.file.tell() - cur_position
+            entry['header']['data_size'] = self.int32_bytes(data_size)
+            entry['header']['redundant_size'] = entry['header']['data_size']
+
+        self.file.seek(0)
+        self.write_header(manifest)
+
+        for entry in manifest['entries']:
+            print("BND3: Writing entry header for {} at offset {}".format(entry['actual_filename'], self.file.tell()))
+            self.write_header(entry)

@@ -1,18 +1,18 @@
-import zlib
 import io
+import zlib
 from _collections import OrderedDict
 from binary_file import BinaryFile
-from bnd3_reader import BND3Reader
+from bnd3_file import BND3File
 
 
-class DCXReader(BinaryFile):
+class DCXFile(BinaryFile):
     MAGIC_HEADER = b"DCX\x00"
 
     def __init__(self, file, path):
         super().__init__(file, path)
         self.endian = "big"
 
-    def process_file(self):
+    def extract_file(self):
         print("DCX: Reading file {}".format(self.path))
 
         manifest = {
@@ -31,9 +31,8 @@ class DCXReader(BinaryFile):
                 ("dca_signature", self.consume(b"DCA\x00")),
                 ("dca_header_size", self.read(4)),
             ]),
+            "end_header_pos": self.file.tell(),
         }
-
-        manifest["end_header_pos"] = self.file.tell()
 
         compressed_data = self.read(self.to_int32(manifest['header']['compressed_size']))
         uncompressed_data = zlib.decompress(compressed_data)
@@ -49,8 +48,32 @@ class DCXReader(BinaryFile):
 
         if uncompressed_filename.endswith("bnd"):
             with io.BytesIO(uncompressed_data) as bnd3_buffer:
-                manifest['bnd'] = BND3Reader(bnd3_buffer, uncompressed_filename).process_file()
+                manifest['bnd'] = BND3File(bnd3_buffer, uncompressed_filename).extract_file()
         else:
             self.write_data(uncompressed_filename, uncompressed_data)
 
         return manifest
+
+    def create_file(self, manifest):
+        print("DCX: Writing file {}".format(self.path))
+
+        self.file.seek(manifest['end_header_pos'])
+
+        cur_position = self.file.tell()
+        print("DCX: Writing uncompressed file {} at offset {}".format(manifest['uncompressed_filename'], cur_position))
+        if "bnd" in manifest:
+            with io.BytesIO() as bnd3_buffer:
+                BND3File(bnd3_buffer, manifest['uncompressed_filename']).create_file(manifest['bnd'])
+                bnd3_buffer.seek(0)
+                uncompressed_data = bnd3_buffer.read()
+        else:
+            uncompressed_data = open(manifest['uncompressed_filename'], "rb").read()
+
+        manifest['header']['uncompressed_size'] = self.int32_bytes(len(uncompressed_data))
+
+        compressed_data = zlib.compress(uncompressed_data)
+        manifest['header']['compressed_size'] = self.int32_bytes(len(compressed_data))
+        self.write(compressed_data)
+
+        self.file.seek(0)
+        self.write_header(manifest)
