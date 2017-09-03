@@ -1,8 +1,9 @@
 import io
 import zlib
 from _collections import OrderedDict
-from binary_file import BinaryFile
-from bnd3_file import BND3File
+
+from lib.bnd3_file import BND3File
+from lib.binary_file import BinaryFile
 
 
 class DCXFile(BinaryFile):

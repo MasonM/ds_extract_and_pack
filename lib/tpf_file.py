@@ -1,6 +1,7 @@
 import os
 from _collections import OrderedDict
-from binary_file import BinaryFile
+
+from lib.binary_file import BinaryFile
 
 
 class TPFFile(BinaryFile):

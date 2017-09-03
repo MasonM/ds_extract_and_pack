@@ -1,7 +1,8 @@
 import os
 from _collections import OrderedDict
-from binary_file import BinaryFile
-from name_hash_handler import build_name_hash_dict
+
+from lib.name_hash_handler import build_name_hash_dict
+from lib.binary_file import BinaryFile
 
 
 class BHD5File(BinaryFile):

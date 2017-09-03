@@ -1,7 +1,8 @@
 import io
-from binary_file import BinaryFile
-from bhd5_file import BHD5File
-from dcx_file import DCXFile
+
+from lib.bhd5_file import BHD5File
+from lib.binary_file import BinaryFile
+from lib.dcx_file import DCXFile
 
 
 class BDTFile(BinaryFile):

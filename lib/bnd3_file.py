@@ -1,7 +1,8 @@
 import io
 from _collections import OrderedDict
-from binary_file import BinaryFile
-from tpf_file import TPFFile
+
+from lib.tpf_file import TPFFile
+from lib.binary_file import BinaryFile
 
 
 class BND3File(BinaryFile):
