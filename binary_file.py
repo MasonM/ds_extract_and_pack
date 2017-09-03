@@ -7,13 +7,11 @@ class BinaryFile:
         self.path = path
         self.endian = "little"
 
-    def normalize_filepath(self, filepath):
-        if self.path is None:
-            raise RuntimeError("File path not given")
-        if filepath.lower().startswith("n:\\"):
-            filepath = filepath[3:]
-        filepath = os.path.join(os.path.dirname(self.path), filepath.replace("\\", os.sep))
-        return os.path.normpath(filepath)
+    def normalize_filepath(self, path):
+        if path.lower().startswith("n:\\"):
+            path = path[3:]
+        path = os.path.join(os.path.dirname(self.path), path.replace("\\", os.sep))
+        return os.path.normpath(path)
 
     def write(self, *args):
         for arg in args:
@@ -32,7 +30,7 @@ class BinaryFile:
             num_to_read = len(expected_bytes)
         actual_bytes = self.read(num_to_read)
         if actual_bytes != expected_bytes:
-            raise ValueError("Expected {}, got {}".format(expected_bytes, bytes))
+            raise ValueError("Expected {}, got {}".format(expected_bytes, actual_bytes))
         return actual_bytes
 
     def read_null_terminated_string(self):

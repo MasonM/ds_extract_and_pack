@@ -1,7 +1,7 @@
 import io
 from binary_file import BinaryFile
 from bhd5_reader import BHD5Reader
-from dcx_reader import DcxReader
+from dcx_reader import DCXReader
 
 
 class BDTReader(BinaryFile):
@@ -21,9 +21,9 @@ class BDTReader(BinaryFile):
                 data = self.read(record_data['record_size'])
                 filepath = self.normalize_filepath(record_data['record_name'])
                 print("BDT: extracting {}".format(filepath))
-                if data.startswith(DcxReader.MAGIC_HEADER):
+                if data.startswith(DCXReader.MAGIC_HEADER):
                     with io.BytesIO() as dcx_buffer:
-                        record_data['dcx'] = DcxReader(dcx_buffer, filepath).process_file()
+                        record_data['dcx'] = DCXReader(dcx_buffer, filepath).process_file()
                 else:
                     self.write_data(filepath, data)
 

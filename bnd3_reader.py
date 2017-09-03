@@ -1,4 +1,5 @@
 import io
+from _collections import OrderedDict
 from binary_file import BinaryFile
 from tpf_reader import TpfReader
 
@@ -10,14 +11,14 @@ class BND3Reader(BinaryFile):
         print("BND3: Reading file {}".format(self.path))
 
         manifest = {
-            "header": {
-                "signature": self.consume(self.MAGIC_HEADER),
-                "unknown_bytes": self.read(8),
-                "version": self.read(4),
-                "entry_count": self.read(4),
-                "header_size": self.read(4),
-                "padding": self.consume(0x0, 8),
-            },
+            "header": OrderedDict([
+                ("signature", self.consume(self.MAGIC_HEADER)),
+                ("unknown_bytes", self.read(8)),
+                ("version", self.read(4)),
+                ("entry_count", self.read(4)),
+                ("header_size", self.read(4)),
+                ("padding", self.consume(0x0, 8)),
+            ]),
             "entries": [],
         }
 
@@ -35,19 +36,22 @@ class BND3Reader(BinaryFile):
 
     def read_entry(self, version):
         entry = {
-            "header": {
-                "record_sep": self.consume(0x40, 4),
-                'data_size': self.read(4),
-                'data_offset': self.read(4),
-                'id': self.read(4),
-                "filename_offset": self.read(4),
-            },
+            "header": OrderedDict([
+                ("record_sep", self.consume(0x40, 4)),
+                ('data_size', self.read(4)),
+                ('data_offset', self.read(4)),
+                ('id', self.read(4)),
+                ("filename_offset", self.read(4)),
+            ]),
         }
 
         if version in (0x74, 0x54):
-            redundant_size = self.read(4)
-            if redundant_size != entry['header']['data_size']:
-                raise ValueError("Expected size {:02x}, got {:02x}".format(entry['header']['data_size'], redundant_size))
+            entry['header']['redundant_size'] = self.read(4)
+            if entry['header']['redundant_size'] != entry['header']['data_size']:
+                raise ValueError("Expected size {:02x}, got {:02x}".format(
+                    entry['header']['data_size'],
+                    entry['header']['redundant_size'])
+                )
 
         position = self.file.tell()
         filename_offset = self.to_int32(entry['header']['filename_offset'])
@@ -63,7 +67,9 @@ class BND3Reader(BinaryFile):
         if data_offset > 0:
             self.file.seek(data_offset)
             data = self.read(data_size)
-            print("BND3: Reading data, offset = {}, size = {}, filename = {}".format(data_offset, data_size, entry['actual_filename']))
+            print("BND3: Reading data, offset = {}, size = {}, filename = {}".format(
+                data_offset, data_size, entry['actual_filename'])
+            )
             if data.startswith(TpfReader.MAGIC_HEADER):
                 with io.BytesIO(data) as tpf_buffer:
                     entry['tpf'] = TpfReader(tpf_buffer, entry['actual_filename']).process_file()

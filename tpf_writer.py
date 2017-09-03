@@ -30,5 +30,3 @@ class TpfWriter(BinaryFile):
         for entry in manifest['entries']:
             print("TPF: Writing entry header for {} at offset {}".format(entry['actual_filename'], self.file.tell()))
             self.write_header(entry)
-
-        self.file.close()

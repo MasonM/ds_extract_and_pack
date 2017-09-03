@@ -1,4 +1,5 @@
 import os
+from _collections import OrderedDict
 from binary_file import BinaryFile
 from name_hash_handler import build_name_hash_dict
 
@@ -10,13 +11,13 @@ class BHD5Reader(BinaryFile):
         self.name_hash_dict = build_name_hash_dict()
 
         manifest = {
-            "header": {
-                "signature": self.consume(self.MAGIC_HEADER),
-                "unknown1": self.consume(b"\x00\x00\x00\x01\x00\x00\x00"),
-                "file_size": self.read(4),
-                "bin_count": self.read(4),
-                "bin_record_offset": self.read(4),
-            },
+            "header": OrderedDict([
+                ("signature", self.consume(self.MAGIC_HEADER)),
+                ("unknown1", self.consume(b"\x00\x00\x00\x01\x00\x00\x00")),
+                ("file_size", self.read(4)),
+                ("bin_count", self.read(4)),
+                ("bin_record_offset", self.read(4)),
+            ]),
             "bins": [],
         }
 
@@ -30,10 +31,10 @@ class BHD5Reader(BinaryFile):
 
     def read_bin(self):
         bin_data = {
-            "header": {
-                "record_count": self.read(4),
-                "offset": self.read(4),
-            },
+            "header": OrderedDict([
+                ("record_count", self.read(4)),
+                ("offset", self.read(4)),
+            ]),
             "records": [],
         }
 
@@ -48,12 +49,12 @@ class BHD5Reader(BinaryFile):
 
     def read_record(self):
         entry = {
-            "header": {
-                'record_hash': self.read(4),
-                'record_size': self.read(4),
-                'record_offset': self.read(4),
-                'padding': self.consume(0x0, 4),
-            },
+            "header": OrderedDict([
+                ('record_hash', self.read(4)),
+                ('record_size', self.read(4)),
+                ('record_offset', self.read(4)),
+                ('padding', self.consume(0x0, 4)),
+            ]),
         }
 
         record_hash = self.to_int32(entry['header']['record_hash'])
