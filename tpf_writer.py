@@ -1,53 +1,36 @@
 import os
-import pickle
-from .binary_file_writer import BinaryFileWriter, to_int32
+from binary_file import BinaryFile
 
 
-class TpfWriter(BinaryFileWriter):
-    def __init__(self, metadata_path):
-        self.metadata = pickle.load(open(metadata_path, "rb"))
-        tpf_filename = os.path.basename(metadata_path).split(".")[0] + "_new.tpf"
-        print(self.metadata)
-        super().__init__(tpf_filename)
+class TpfWriter(BinaryFile):
+    def process_file(self, manifest):
+        print("TPF: Writing file {}".format(self.file.name))
 
-    def write_file(self):
-        print("Writing TPF file {}".format(self.file.name))
-        self.write(
-            self.metadata['signature'],
-            to_int32(self.metadata['size_sum']),
-            to_int32(self.metadata['entry_count']),
-            self.metadata['flag1'],
-            self.metadata['flag2'],
-            self.metadata['encoding'],
-            self.metadata['flag3'],
-        )
+        self.file.seek(manifest['end_header_pos'])
 
-        for entry in self.metadata['entries']:
-            self.file.close()
+        for entry in manifest['entries']:
+            print("TPF: Writing entry filename for {} at offset {}".format(entry['actual_filename'], self.file.tell()))
+            entry['header']['filename_offset'] = self.int32_bytes(self.file.tell())
+            self.write(entry['filename'].encode("shift_jis"), b"\x00")
 
-    def write_entry(self, entry):
-        print("Writing entry #{}".format(entry))
-        self.write(
-            to_int32(entry['data_offset']),
-            to_int32(entry['data_size']),
-            entry['format'],
-            entry['type'],
-            entry['mipmap_count'],
-            entry['flags'],
-            to_int32(entry['filename_offset']),
-            to_int32(entry['unknown']),
-        )
+        self.write(b"\x00" * 48) # padding
 
-        position = self.file.tell()
-        if entry['filename_offset'] > 0:
-            print("Writing filename, offset = {}".format(entry['filename_offset']))
-            self.file.seek(entry['filename_offset'])
-            self.write(entry['filename'].encode("ascii"))
+        size_sum = 0
+        for entry in manifest['entries']:
+            print("TPF: Writing entry data for {} at offset {}".format(entry['actual_filename'], self.file.tell()))
+            entry['header']['data_size'] = self.int32_bytes(os.path.getsize(entry['actual_filename']))
+            size_sum += self.to_int32(entry['header']['data_size'])
+            entry['header']['data_offset'] = self.int32_bytes(self.file.tell())
+            self.write(open(entry['actual_filename'], 'rb').read())
 
-        if entry['data_offset'] > 0:
-            print("Writing data, offset = {}, size = {}".format(entry['data_offset'], entry['data_size']))
-            self.file.seek(entry['data_offset'])
-            data = open(entry['filename'] + ".dds", 'rb')
-            self.write(data.read())
+        self.file.seek(0)
 
-        self.file.seek(position)
+        self.write(*manifest['header'].values())
+
+        for entry in manifest['entries']:
+            print("TPF: Writing entry header for {} at offset {}".format(entry['actual_filename'], self.file.tell()))
+
+            self.write(*entry['header'].values())
+            #self.write_entry(entry)
+
+        self.file.close()

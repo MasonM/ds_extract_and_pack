@@ -1,57 +1,70 @@
-import os
-from .binary_file_reader import BinaryFileReader
+from .binary_file import BinaryFile
+from .tpf_reader import TpfReader
 
 
-class BND3Reader(BinaryFileReader):
-    def extract_file(self):
-        self.consume(b"BND3")
-        self.file.seek(8, os.SEEK_CUR)
-        self.data.update({
-            "version": self.read_int32(),
-            "entry_count": self.read_int32(),
-            "header_size": self.read_int32(),
+class BND3Reader(BinaryFile):
+    MAGIC_HEADER = b"BND3"
+
+    def process_file(self):
+        manifest= {
+            "header": {
+                "signature": self.consume(self.MAGIC_HEADER),
+                "unknown_bytes": self.read(8),
+                "version": self.read(4),
+                "entry_count": self.read(4),
+                "header_size": self.read(4),
+            },
             "entries": [],
-        })
+        }
 
-        if self.data['version'] not in (0x74, 0x54, 0x70):
-            raise ValueError("Invalid version: {:02X}".format(self.data['version']))
+        version = self.to_int32(manifest['header']['version'])
+        if version not in (0x74, 0x54, 0x70):
+            raise ValueError("Invalid version: {:02X}".format(manifest['header']['version']))
 
         self.consume(0x0, 8)
 
-        for i in range(self.data['entry_count']):
-            print("Reading entry #{}".format(i))
-            self.data['entries'].append(self.read_entry())
+        for i in range(self.to_int32(manifest['header']['entry_count'])):
+            print("BND3: Reading entry #{}".format(i))
+            manifest['entries'].append(self.read_entry(version))
 
-        print(self.data)
+        return manifest
 
-    def read_entry(self):
-        self.consume(0x40, 4)
-
+    def read_entry(self, version):
         entry = {
-            'data_size': self.read_int32(),
-            'data_offset': self.read_int32(),
-            'id': self.read_int32(),
-            "filename_offset": self.read_int32()
+            "header": {
+                "record_sep": self.consume(0x40, 4),
+                'data_size': self.read(4),
+                'data_offset': self.read(4),
+                'id': self.read(4),
+                "filepath_offset": self.read(4),
+            },
         }
 
-        if self.data['version'] in (0x74, 0x54):
-            redundant_size = self.read_int32()
-            if redundant_size != entry['data_size']:
-                raise ValueError("Expected size {:02x}, got {:02x}".format(entry['data_size'], redundant_size))
+        if version in (0x74, 0x54):
+            redundant_size = self.read(4)
+            if redundant_size != entry['header']['data_size']:
+                raise ValueError("Expected size {:02x}, got {:02x}".format(entry['header']['data_size'], redundant_size))
 
         position = self.file.tell()
-        if entry['filename_offset'] > 0:
-            print("Reading filename, offset = {}".format(entry['filename_offset']))
-            self.file.seek(entry['filename_offset'])
-            entry['filename'] = self.read_null_terminated_string()
-            print("got filename %s" % entry['filename'])
+        filepath_offset = self.to_int32(entry['header']['filepath_offset'])
+        if filepath_offset > 0:
+            #print("BND3: Reading filepath, offset = {}".format(entry['filepath_offset']))
+            self.file.seek(filepath_offset)
+            entry['filepath'] = self.read_null_terminated_string()
+            #print("BND3: got filepath %s" % entry['filepath'])
 
-        if entry['data_offset'] > 0:
-            print("Reading data, offset = {}, size = {}".format(entry['data_offset'], entry['data_size']))
-            self.file.seek(entry['data_offset'])
-            data = self.read(entry['data_size'])
-            #entry['data'] = data
-            #open(entry['filename'] + ".dds", 'wb').write(data)
+        data_offset = self.to_int32(entry['header']['data_offset'])
+        data_size = self.to_int32(entry['header']['data_size'])
+        if data_offset > 0:
+            self.file.seek(data_offset)
+            data = self.read(data_size)
+            filepath = self.join_to_parent_dir(entry['filepath'])
+            print("BND3: Reading data, offset = {}, size = {}, filepath = {}".format(data_offset, data_size, filepath))
+            self.write(filepath, data)
+            if data.startswith(TpfReader.MAGIC_HEADER):
+                tpf_reader = TpfReader(filepath, self.base_dir)
+                entry['tpf'] = tpf_reader.process_file()
+                tpf_reader.remove()
 
         self.file.seek(position)
 
