@@ -20,6 +20,7 @@ class BHD5Reader(BinaryFile):
             ]),
             "bins": [],
         }
+        #print(self.to_int32(manifest['header']['file_size']))
 
         for i in range(self.to_int32(manifest["header"]['bin_count'])):
             print("BHD5: Reading bin #{}".format(i))

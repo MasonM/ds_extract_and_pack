@@ -17,9 +17,10 @@ class BDTReader(BinaryFile):
 
         for bin_data in manifest['bins']:
             for record_data in bin_data['records']:
-                self.file.seek(record_data['record_offset'])
-                data = self.read(record_data['record_size'])
+                self.file.seek(self.to_int32(record_data['header']['record_offset']))
+                data = self.read(self.to_int32(record_data['header']['record_size']))
                 filepath = self.normalize_filepath(record_data['record_name'])
+                record_data['actual_filename'] = filepath
                 print("BDT: extracting {}".format(filepath))
                 if data.startswith(DCXReader.MAGIC_HEADER):
                     with io.BytesIO() as dcx_buffer:
