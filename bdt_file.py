@@ -23,7 +23,7 @@ class BDTFile(BinaryFile):
                 record_data['actual_filename'] = filepath
                 print("BDT: extracting {}".format(filepath))
                 if data.startswith(DCXFile.MAGIC_HEADER):
-                    with io.BytesIO() as dcx_buffer:
+                    with io.BytesIO(data) as dcx_buffer:
                         record_data['dcx'] = DCXFile(dcx_buffer, filepath).extract_file()
                 else:
                     self.write_data(filepath, data)
@@ -35,7 +35,7 @@ class BDTFile(BinaryFile):
         print("BDT: Writing file {}".format(self.path))
 
         self.write(self.MAGIC_HEADER)
-        self.write(b"0x00" * 6)
+        self.write(bytearray(6))
 
         for bin_data in manifest['bins']:
             bin_data['header']['offset'] = self.int32_bytes(self.file.tell())
