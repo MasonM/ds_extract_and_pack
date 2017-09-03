@@ -1,7 +1,6 @@
 import os
-import pprint
-from .binary_file import BinaryFile
-from .name_hash_handler import build_name_hash_dict
+from binary_file import BinaryFile
+from name_hash_handler import build_name_hash_dict
 
 
 class BHD5Reader(BinaryFile):

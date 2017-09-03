@@ -1,18 +1,22 @@
-from .binary_file import BinaryFile
-from .tpf_reader import TpfReader
+import io
+from binary_file import BinaryFile
+from tpf_reader import TpfReader
 
 
 class BND3Reader(BinaryFile):
     MAGIC_HEADER = b"BND3"
 
     def process_file(self):
-        manifest= {
+        print("BND3: Reading file {}".format(self.path))
+
+        manifest = {
             "header": {
                 "signature": self.consume(self.MAGIC_HEADER),
                 "unknown_bytes": self.read(8),
                 "version": self.read(4),
                 "entry_count": self.read(4),
                 "header_size": self.read(4),
+                "padding": self.consume(0x0, 8),
             },
             "entries": [],
         }
@@ -21,11 +25,11 @@ class BND3Reader(BinaryFile):
         if version not in (0x74, 0x54, 0x70):
             raise ValueError("Invalid version: {:02X}".format(manifest['header']['version']))
 
-        self.consume(0x0, 8)
-
         for i in range(self.to_int32(manifest['header']['entry_count'])):
             print("BND3: Reading entry #{}".format(i))
             manifest['entries'].append(self.read_entry(version))
+
+        manifest["end_header_pos"] = self.file.tell()
 
         return manifest
 
@@ -36,7 +40,7 @@ class BND3Reader(BinaryFile):
                 'data_size': self.read(4),
                 'data_offset': self.read(4),
                 'id': self.read(4),
-                "filepath_offset": self.read(4),
+                "filename_offset": self.read(4),
             },
         }
 
@@ -46,25 +50,25 @@ class BND3Reader(BinaryFile):
                 raise ValueError("Expected size {:02x}, got {:02x}".format(entry['header']['data_size'], redundant_size))
 
         position = self.file.tell()
-        filepath_offset = self.to_int32(entry['header']['filepath_offset'])
-        if filepath_offset > 0:
-            #print("BND3: Reading filepath, offset = {}".format(entry['filepath_offset']))
-            self.file.seek(filepath_offset)
-            entry['filepath'] = self.read_null_terminated_string()
-            #print("BND3: got filepath %s" % entry['filepath'])
+        filename_offset = self.to_int32(entry['header']['filename_offset'])
+        if filename_offset > 0:
+            #print("BND3: Reading filename, offset = {}".format(entry['filename_offset']))
+            self.file.seek(filename_offset)
+            entry['filename'] = self.read_null_terminated_string()
+            entry['actual_filename'] = self.normalize_filepath(entry['filename'])
+            #print("BND3: got filename %s" % entry['filename'])
 
         data_offset = self.to_int32(entry['header']['data_offset'])
         data_size = self.to_int32(entry['header']['data_size'])
         if data_offset > 0:
             self.file.seek(data_offset)
             data = self.read(data_size)
-            filepath = self.join_to_parent_dir(entry['filepath'])
-            print("BND3: Reading data, offset = {}, size = {}, filepath = {}".format(data_offset, data_size, filepath))
-            self.write(filepath, data)
+            print("BND3: Reading data, offset = {}, size = {}, filename = {}".format(data_offset, data_size, entry['actual_filename']))
             if data.startswith(TpfReader.MAGIC_HEADER):
-                tpf_reader = TpfReader(filepath, self.base_dir)
-                entry['tpf'] = tpf_reader.process_file()
-                tpf_reader.remove()
+                with io.BytesIO(data) as tpf_buffer:
+                    entry['tpf'] = TpfReader(tpf_buffer, entry['actual_filename']).process_file()
+            else:
+                self.write_data(entry['actual_filename'], data)
 
         self.file.seek(position)
 

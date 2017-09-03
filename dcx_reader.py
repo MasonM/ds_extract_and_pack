@@ -1,6 +1,7 @@
 import zlib
-from .binary_file import BinaryFile
-from .bnd3_reader import BND3Reader
+import io
+from binary_file import BinaryFile
+from bnd3_reader import BND3Reader
 
 
 class DcxReader(BinaryFile):
@@ -11,6 +12,8 @@ class DcxReader(BinaryFile):
         self.endian = "big"
 
     def process_file(self):
+        print("DCX: Reading file {}".format(self.path))
+
         manifest = {
             "header": {
                 "dcx_signature": self.consume(self.MAGIC_HEADER),
@@ -30,12 +33,19 @@ class DcxReader(BinaryFile):
 
         compressed_data = self.read(self.to_int32(manifest['header']['compressed_size']))
         decompressed_data = zlib.decompress(compressed_data)
+        if len(decompressed_data) != self.to_int32(manifest['header']['uncompressed_size']):
+            msg = "Expected decompressed size {:02x}, got {:02x}".format(
+                manifest['header']['uncompressed_size'],
+                len(decompressed_data)
+            )
+            raise ValueError(msg)
+
         decompressed_filename = self.path.replace(".dcx", "")
-        self.write(decompressed_filename, decompressed_data)
 
         if decompressed_filename.endswith("bnd"):
-            bnd3_reader = BND3Reader(decompressed_filename, self.base_dir)
-            manifest['bnd'] = bnd3_reader.process_file()
-            bnd3_reader.remove()
+            with io.BytesIO(decompressed_data) as bnd3_buffer:
+                manifest['bnd'] = BND3Reader(bnd3_buffer, decompressed_filename).process_file()
+        else:
+            self.write_data(decompressed_filename, decompressed_data)
 
         return manifest

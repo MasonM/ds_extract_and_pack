@@ -4,7 +4,7 @@ from binary_file import BinaryFile
 
 class TpfWriter(BinaryFile):
     def process_file(self, manifest):
-        print("TPF: Writing file {}".format(self.file.name))
+        print("TPF: Writing file {}".format(self.path))
 
         self.file.seek(manifest['end_header_pos'])
 
@@ -24,13 +24,11 @@ class TpfWriter(BinaryFile):
             self.write(open(entry['actual_filename'], 'rb').read())
 
         self.file.seek(0)
-
-        self.write(*manifest['header'].values())
+        manifest['header']['size_sum'] = self.int32_bytes(size_sum)
+        self.write_header(manifest)
 
         for entry in manifest['entries']:
             print("TPF: Writing entry header for {} at offset {}".format(entry['actual_filename'], self.file.tell()))
-
-            self.write(*entry['header'].values())
-            #self.write_entry(entry)
+            self.write_header(entry)
 
         self.file.close()

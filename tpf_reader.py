@@ -6,6 +6,8 @@ class TpfReader(BinaryFile):
     MAGIC_HEADER = b"TPF\x00"
 
     def process_file(self):
+        print("TPF: Reading file {}".format(self.path))
+
         manifest = {
             'header': OrderedDict([
                 ('signature', self.consume(self.MAGIC_HEADER)),
@@ -41,8 +43,6 @@ class TpfReader(BinaryFile):
             ]),
         }
 
-        #print(entry)
-
         position = self.file.tell()
         filename_offset = self.to_int32(entry['header']['filename_offset'])
         if filename_offset > 0:
@@ -52,11 +52,11 @@ class TpfReader(BinaryFile):
         data_offset = self.to_int32(entry['header']['data_offset'])
         data_size = self.to_int32(entry['header']['data_size'])
         if data_offset > 0:
-            print("TPF: Reading data, offset = {}, size = {}, filename = {}".format(data_offset, data_size, entry['filename']))
+            entry['actual_filename'] = self.normalize_filepath(entry['filename']) + ".dds"
+            print("TPF: Reading data, offset = {}, size = {}, filename = {}, actual filename = {}".format(data_offset, data_size, entry['filename'], entry['actual_filename']))
             self.file.seek(data_offset)
             data = self.read(data_size)
-            entry['actual_filename'] = self.join_to_parent_dir(entry['filename']) + ".dds"
-            self.write(entry['actual_filename'], data)
+            self.write_data(entry['actual_filename'], data)
 
         self.file.seek(position)
 

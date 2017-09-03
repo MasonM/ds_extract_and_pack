@@ -2,29 +2,28 @@ import os
 
 
 class BinaryFile:
-    def __init__(self, file, base_dir=None):
+    def __init__(self, file, path):
         self.file = file
-        self.path = file.name
-        if base_dir is None:
-            base_dir = os.path.dirname(file.name)
-        self.base_dir = base_dir
+        self.path = path
         self.endian = "little"
 
-    def join_to_parent_dir(self, filepath):
+    def normalize_filepath(self, filepath):
+        if self.path is None:
+            raise RuntimeError("File path not given")
         if filepath.lower().startswith("n:\\"):
             filepath = filepath[3:]
-        return os.path.normpath(os.path.join(self.base_dir, filepath))
+        filepath = os.path.join(os.path.dirname(self.path), filepath.replace("\\", os.sep))
+        return os.path.normpath(filepath)
 
     def write(self, *args):
         for arg in args:
             self.file.write(arg)
 
+    def write_header(self, manifest):
+        self.write(*manifest['header'].values())
+
     def read(self, num_bytes):
         return self.file.read(num_bytes)
-
-    def remove(self):
-        self.file.close()
-        os.remove(self.path)
 
     def consume(self, expected_bytes, num_to_read=None):
         if num_to_read:
