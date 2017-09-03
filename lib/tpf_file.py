@@ -7,7 +7,7 @@ from lib.binary_file import BinaryFile
 class TPFFile(BinaryFile):
     MAGIC_HEADER = b"TPF\x00"
 
-    def extract_file(self):
+    def extract_file(self, base_dir):
         print("TPF: Reading file {}".format(self.path))
 
         manifest = {
@@ -25,13 +25,13 @@ class TPFFile(BinaryFile):
 
         for i in range(self.to_int32(manifest['header']['entry_count'])):
             print("TPF: Reading entry #{}".format(i))
-            manifest['entries'].append(self._read_entry())
+            manifest['entries'].append(self._read_entry(base_dir))
 
         manifest["end_header_pos"] = self.file.tell()
 
         return manifest
 
-    def _read_entry(self):
+    def _read_entry(self, base_dir):
         entry = {
             'header': OrderedDict([
                 ('data_offset', self.read(4)),
@@ -54,7 +54,7 @@ class TPFFile(BinaryFile):
         data_offset = self.to_int32(entry['header']['data_offset'])
         data_size = self.to_int32(entry['header']['data_size'])
         if data_offset > 0:
-            entry['actual_filename'] = self.normalize_filepath(entry['filename']) + ".dds"
+            entry['actual_filename'] = self.normalize_filepath(entry['filename'], base_dir) + ".dds"
             print("TPF: Reading data, offset = {}, size = {}, filename = {}, actual filename = {}".format(data_offset, data_size, entry['filename'], entry['actual_filename']))
             self.file.seek(data_offset)
             data = self.read(data_size)

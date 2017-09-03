@@ -1,3 +1,4 @@
+import os
 import io
 import zlib
 from _collections import OrderedDict
@@ -13,7 +14,7 @@ class DCXFile(BinaryFile):
         super().__init__(file, path)
         self.endian = "big"
 
-    def extract_file(self):
+    def extract_file(self, base_dir):
         print("DCX: Reading file {}".format(self.path))
 
         manifest = {
@@ -44,12 +45,12 @@ class DCXFile(BinaryFile):
             )
             raise ValueError(msg)
 
-        uncompressed_filename = self.path.replace(".dcx", "")
+        uncompressed_filename = os.path.join(base_dir, os.path.basename(self.path).replace(".dcx", ""))
         manifest['uncompressed_filename'] = uncompressed_filename
 
         if uncompressed_filename.endswith("bnd"):
             with io.BytesIO(uncompressed_data) as bnd3_buffer:
-                manifest['bnd'] = BND3File(bnd3_buffer, uncompressed_filename).extract_file()
+                manifest['bnd'] = BND3File(bnd3_buffer, uncompressed_filename).extract_file(base_dir)
         else:
             self.write_data(uncompressed_filename, uncompressed_data)
 

@@ -8,7 +8,7 @@ from lib.binary_file import BinaryFile
 class BHD5File(BinaryFile):
     MAGIC_HEADER = b"BHD5\xff"
 
-    def extract_file(self):
+    def extract_file(self, base_dir):
         self.name_hash_dict = build_name_hash_dict()
 
         manifest = {

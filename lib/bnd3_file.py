@@ -8,7 +8,7 @@ from lib.binary_file import BinaryFile
 class BND3File(BinaryFile):
     MAGIC_HEADER = b"BND3"
 
-    def extract_file(self):
+    def extract_file(self, base_dir):
         print("BND3: Reading file {}".format(self.path))
 
         manifest = {
@@ -29,13 +29,13 @@ class BND3File(BinaryFile):
 
         for i in range(self.to_int32(manifest['header']['entry_count'])):
             print("BND3: Reading entry #{}".format(i))
-            manifest['entries'].append(self._read_entry(version))
+            manifest['entries'].append(self._read_entry(version, base_dir))
 
         manifest["end_header_pos"] = self.file.tell()
 
         return manifest
 
-    def _read_entry(self, version):
+    def _read_entry(self, version, base_dir):
         entry = {
             "header": OrderedDict([
                 ("record_sep", self.consume(0x40, 4)),
@@ -60,7 +60,7 @@ class BND3File(BinaryFile):
             #print("BND3: Reading filename, offset = {}".format(entry['filename_offset']))
             self.file.seek(filename_offset)
             entry['filename'] = self.read_null_terminated_string()
-            entry['actual_filename'] = self.normalize_filepath(entry['filename'])
+            entry['actual_filename'] = self.normalize_filepath(entry['filename'], base_dir)
             #print("BND3: got filename %s" % entry['filename'])
 
         data_offset = self.to_int32(entry['header']['data_offset'])
@@ -73,7 +73,7 @@ class BND3File(BinaryFile):
             )
             if data.startswith(TPFFile.MAGIC_HEADER):
                 with io.BytesIO(data) as tpf_buffer:
-                    entry['tpf'] = TPFFile(tpf_buffer, entry['actual_filename']).extract_file()
+                    entry['tpf'] = TPFFile(tpf_buffer, entry['actual_filename']).extract_file(base_dir)
             else:
                 self.write_data(entry['actual_filename'], data)
 

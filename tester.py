@@ -21,18 +21,14 @@ def dir_prep(base_dir):
 
 def do_read_test(filename, cls):
     dir_prep(extract_base_dir)
-
-    path = os.path.join(extract_base_dir, filename)
-    manifest = cls(open(filename, "rb"), path).extract_file()
+    manifest = cls(open(filename, "rb"), filename).extract_file(extract_base_dir)
     pprint(manifest)
     return manifest
 
 
 def do_write_test(filename, manifest, cls):
     dir_prep(output_base_dir)
-
-    path = os.path.join(extract_base_dir, filename)
-    cls(open(filename, "wb"), path).create_file(manifest)
+    cls(open(filename, "wb"), filename).create_file(manifest)
 
 
 def do_read_write_test(filename, cls):
@@ -46,10 +42,10 @@ bnd3_file = "o1470.objbnd"
 #bnd3_file = "item.objbnd"
 dcx_file = bnd3_file
 #dcx_file = "m18_00_00_00.emeld"
-bdt_file = "dvdbnd3"
+bdt_file = "dvdbnd2"
 #bdt_file = "dvdbnd1"
 
-test = "tpf"
+test = "bdt"
 
 if test == "tpf":
     do_read_write_test(tpf_file + ".tpf", TPFFile)

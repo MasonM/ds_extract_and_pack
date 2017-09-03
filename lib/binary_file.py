@@ -7,10 +7,10 @@ class BinaryFile:
         self.path = path
         self.endian = "little"
 
-    def normalize_filepath(self, path):
+    def normalize_filepath(self, path, base_dir):
         if path.lower().startswith("n:\\"):
             path = path[3:]
-        path = os.path.join(os.path.dirname(self.path), path.replace("\\", os.sep))
+        path = os.path.join(base_dir, path.replace("\\", os.sep))
         return os.path.normpath(path)
 
     def write(self, *args):
