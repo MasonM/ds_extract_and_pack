@@ -1,5 +1,6 @@
 import os
 import shutil
+import pickle
 from pprint import pprint
 
 from lib.bdt_file import BDTFile
@@ -22,7 +23,7 @@ def dir_prep(base_dir):
 def do_read_test(filename, cls):
     dir_prep(extract_base_dir)
     manifest = cls(open(filename, "rb"), filename).extract_file(extract_base_dir)
-    pprint(manifest)
+    #pprint(manifest)
     return manifest
 
 
@@ -36,14 +37,16 @@ def do_read_write_test(filename, cls):
     do_write_test(os.path.join(output_base_dir, filename), manifest, cls)
     do_read_test(os.path.join(output_base_dir, filename), cls)
 
+    manifest_filename = os.path.join(output_base_dir, "manifest")
+    pickle.dump(manifest, open(manifest_filename, "wb"))
+
 tpf_file = "o1470"
 #tpf_file = "c3320"
 bnd3_file = "o1470.objbnd"
 #bnd3_file = "item.objbnd"
 dcx_file = bnd3_file
 #dcx_file = "m18_00_00_00.emeld"
-bdt_file = "dvdbnd2"
-#bdt_file = "dvdbnd1"
+bdt_file = "dvdbnd1"
 
 test = "bdt"
 
@@ -58,6 +61,4 @@ elif test == "bdt":
 elif test == "dcx":
     do_read_write_test(dcx_file + ".dcx", DCXFile)
 
-#metadata_filename = os.path.basename(self.path).split(".")[0] + ".metadata"
-#pickle.dump(self.data, open(metadata_filename, "wb"))
 #print(get_hash_from_string("/param/GeneratorParam_m10_02_00_00.param"))
