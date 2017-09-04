@@ -57,7 +57,7 @@ class BND3File(BinaryFile):
         position = self.file.tell()
         filename_offset = self.to_int32(entry['header']['filename_offset'])
         if filename_offset > 0:
-            #print("BND3: Reading filename, offset = {}".format(entry['filename_offset']))
+            print("BND3: Reading filename, offset = {}".format(filename_offset))
             self.file.seek(filename_offset)
             entry['filename'] = self.read_null_terminated_string()
             entry['actual_filename'] = self.normalize_filepath(entry['filename'], base_dir)
@@ -109,7 +109,8 @@ class BND3File(BinaryFile):
 
             data_size = self.file.tell() - cur_position
             entry['header']['data_size'] = self.int32_bytes(data_size)
-            entry['header']['redundant_size'] = entry['header']['data_size']
+            if self.to_int32(manifest['header']['version']) in (0x74, 0x54):
+                entry['header']['redundant_size'] = entry['header']['data_size']
 
         self.file.seek(0)
         self.write_header(manifest)

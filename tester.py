@@ -15,9 +15,14 @@ output_base_dir = os.path.abspath("./test_output")
 
 
 def dir_prep(base_dir):
-    if os.path.exists(base_dir):
-        shutil.rmtree(base_dir)
-    os.mkdir(base_dir)
+    for the_file in os.listdir(base_dir):
+        file_path = os.path.join(base_dir, the_file)
+        try:
+            if os.path.isfile(file_path):
+                os.unlink(file_path)
+            elif os.path.isdir(file_path): shutil.rmtree(file_path)
+        except Exception as e:
+            print(e)
 
 
 def do_read_test(filename, cls):
@@ -57,8 +62,13 @@ elif test == "bnd3":
 elif test == "bhd5":
     do_read_write_test(bdt_file + ".bhd5", BHD5File)
 elif test == "bdt":
-    do_read_write_test(bdt_file + ".bdt", BDTFile)
+    #manifest = do_read_test(os.path.join("..", bdt_file + ".bdt"), BDTFile)
+    manifest_filename = os.path.join(output_base_dir, "manifest")
+    manifest = pickle.loads(open(manifest_filename, "rb").read())
+    do_write_test(os.path.join(output_base_dir, bdt_file + ".bdt"), manifest, BDTFile)
+    #do_read_write_test(bdt_file + ".bdt", BDTFile)
 elif test == "dcx":
     do_read_write_test(dcx_file + ".dcx", DCXFile)
 
 #print(get_hash_from_string("/param/GeneratorParam_m10_02_00_00.param"))
+#pickle.dump(manifest, open(manifest_filename, "wb"))

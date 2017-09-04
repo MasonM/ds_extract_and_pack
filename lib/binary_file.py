@@ -40,7 +40,12 @@ class BinaryFile:
             if byte == b'' or byte == b'\x00':
                 break
             buffer += byte
-        return buffer.decode("shift_jis")
+        try:
+            return buffer.decode("shift_jis")
+        except UnicodeDecodeError as e:
+            print("Failed to decode {}".format(buffer))
+            raise e
+
 
     def write_data(self, filepath, data):
         os.makedirs(os.path.dirname(filepath), exist_ok=True)
