@@ -1,16 +1,16 @@
 import os
 from _collections import OrderedDict
 
-from lib.binary_file import BinaryFile
-from lib.name_hash_handler import get_name_from_hash
-import lib.utils
+from .binary_file import BinaryFile
+from .name_hash_handler import get_name_from_hash
+from . import utils
 
 
 class BHD5File(BinaryFile):
     MAGIC_HEADER = b"BHD5"
 
-    def extract_file(self, base_dir):
-        print("BHD5: Parsing file {}".format(self.path))
+    def extract_file(self):
+        self.log("BHD5: Parsing file {}".format(self.path))
 
         manifest = {
             "header": OrderedDict([
@@ -23,17 +23,17 @@ class BHD5File(BinaryFile):
             "bins": [],
         }
 
-        #print(self.to_int32(manifest['header']['file_size']))
+        #self.log(self.to_int32(manifest['header']['file_size']))
 
         for i in range(self.to_int32(manifest["header"]['bin_count'])):
-            print("BHD5: Reading bin #{}".format(i))
-            manifest["bins"].append(self._read_bin(base_dir))
+            self.log("BHD5: Reading bin #{}".format(i))
+            manifest["bins"].append(self._read_bin())
 
         self.file.close()
         #pprint.pprint(self.data)
         return manifest
 
-    def _read_bin(self, base_dir):
+    def _read_bin(self):
         bin_data = {
             "header": OrderedDict([
                 ("record_count", self.read(4)),
@@ -46,12 +46,12 @@ class BHD5File(BinaryFile):
         self.file.seek(self.to_int32(bin_data['header']['offset']))
 
         for i in range(self.to_int32(bin_data['header']['record_count'])):
-            bin_data['records'].append(self._read_record(base_dir))
+            bin_data['records'].append(self._read_record())
 
         self.file.seek(position)
         return bin_data
 
-    def _read_record(self, base_dir):
+    def _read_record(self):
         entry = {
             "header": OrderedDict([
                 ('record_hash', self.read(4)),
@@ -67,13 +67,13 @@ class BHD5File(BinaryFile):
         except KeyError:
             raise ValueError("Failed to find {} in name hash dict".format(record_hash))
 
-        filepath = lib.utils.normalize_filepath(entry['record_name'], base_dir)
+        filepath = self.normalize_filepath(entry['record_name'])
         entry['actual_filename'] = filepath
 
         return entry
 
     def create_file(self, manifest):
-        print("BHD5: Writing file {}".format(self.path))
+        self.log("BHD5: Writing file {}".format(self.path))
 
         self.write_header(manifest)
         for bin_data in manifest['bins']:

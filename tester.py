@@ -1,7 +1,6 @@
 import os
 import shutil
 import pickle
-from pprint import pprint
 
 from lib.bdt_file import BDTFile
 from lib.bhd5_file import BHD5File
@@ -27,7 +26,7 @@ def dir_prep(base_dir):
 
 def do_read_test(filename, cls):
     dir_prep(extract_base_dir)
-    manifest = cls(open(filename, "rb"), filename).extract_file(extract_base_dir)
+    manifest = cls(open(filename, "rb"), filename, 1, extract_base_dir).extract_file()
     #pprint(manifest)
     return manifest
 

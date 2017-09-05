@@ -3,19 +3,19 @@ import io
 import zlib
 from _collections import OrderedDict
 
-from lib.binary_file import BinaryFile
-import lib.utils
+from .binary_file import BinaryFile
+from . import utils
 
 
 class DCXFile(BinaryFile):
     MAGIC_HEADER = b"DCX\x00"
 
-    def __init__(self, file, path):
-        super().__init__(file, path)
+    def __init__(self, file, path, depth=1, base_dir=None):
+        super().__init__(file, path, depth, base_dir)
         self.endian = "big"
 
-    def extract_file(self, base_dir):
-        print("DCX: Reading file {}".format(self.path))
+    def extract_file(self):
+        self.log("DCX: Reading file {}".format(self.path))
 
         manifest = {
             "header": OrderedDict([
@@ -45,26 +45,26 @@ class DCXFile(BinaryFile):
             )
             raise ValueError(msg)
 
-        uncompressed_filename = os.path.join(base_dir, os.path.basename(self.path).replace(".dcx", ""))
+        uncompressed_filename = self.normalize_filepath(os.path.basename(self.path).replace("dcx", ""))
         manifest['uncompressed_filename'] = uncompressed_filename
 
-        file_cls = lib.utils.class_for_data(uncompressed_data)
+        file_cls = utils.class_for_data(uncompressed_data)
         if file_cls:
-            manifest['sub_manifest'] = file_cls(io.BytesIO(uncompressed_data), uncompressed_filename).extract_file(base_dir)
+            manifest['sub_manifest'] = file_cls(io.BytesIO(uncompressed_data), uncompressed_filename, self.depth + 1).extract_file()
         else:
-            lib.utils.write_data(uncompressed_filename, uncompressed_data)
+            utils.write_data(uncompressed_filename, uncompressed_data)
 
         return manifest
 
     def create_file(self, manifest):
-        print("DCX: Writing file {}".format(self.path))
+        self.log("DCX: Writing file {}".format(self.path))
 
         self.file.seek(manifest['end_header_pos'])
 
         cur_position = self.file.tell()
-        print("DCX: Writing uncompressed file {} at offset {}".format(manifest['uncompressed_filename'], cur_position))
+        self.log("DCX: Writing uncompressed file {} at offset {}".format(manifest['uncompressed_filename'], cur_position))
         if 'sub_manifest' in manifest:
-            uncompressed_data = lib.utils.get_data_for_file(manifest['sub_manifest'], manifest['uncompressed_filename'])
+            uncompressed_data = utils.get_data_for_file(manifest['sub_manifest'], manifest['uncompressed_filename'], self.depth + 1)
         else:
             uncompressed_data = open(manifest['uncompressed_filename'], "rb").read()
 

@@ -1,8 +1,13 @@
+import os
+
+
 class BinaryFile:
-    def __init__(self, file, path):
+    def __init__(self, file, path, depth=1, base_dir=None):
         self.file = file
         self.path = path
         self.endian = "little"
+        self.depth = depth
+        self.base_dir = base_dir or os.path.dirname(path)
 
     def write(self, *args):
         for arg in args:
@@ -34,11 +39,23 @@ class BinaryFile:
         try:
             return buffer.decode("shift_jis")
         except UnicodeDecodeError as e:
-            print("Failed to decode {}".format(buffer))
+            self.log("Failed to decode {}".format(buffer))
             raise e
+
+    def normalize_filepath(self, path):
+        if path.lower().startswith("n:\\"):
+            path = path[3:]
+        path = os.path.join(self.base_dir, path.lstrip("\\").replace("\\", os.sep))
+        return os.path.normpath(path)
 
     def int32_bytes(self, i):
         return i.to_bytes(4, byteorder=self.endian)
 
     def to_int32(self, b):
         return int.from_bytes(b, byteorder=self.endian, signed=False)
+
+    def log(self, msg):
+        if self.depth == 1:
+            print(msg)
+        else:
+            print(("  " * self.depth) + "|- " + msg)

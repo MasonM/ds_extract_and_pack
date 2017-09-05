@@ -1,15 +1,15 @@
 import os
 from _collections import OrderedDict
 
-from lib.binary_file import BinaryFile
-import lib.utils
+from .binary_file import BinaryFile
+from . import utils
 
 
 class TPFFile(BinaryFile):
     MAGIC_HEADER = b"TPF\x00"
 
-    def extract_file(self, base_dir):
-        print("TPF: Reading file {}".format(self.path))
+    def extract_file(self):
+        self.log("TPF: Reading file {}".format(self.path))
 
         manifest = {
             'header': OrderedDict([
@@ -25,14 +25,14 @@ class TPFFile(BinaryFile):
         }
 
         for i in range(self.to_int32(manifest['header']['entry_count'])):
-            print("TPF: Reading entry #{}".format(i))
-            manifest['entries'].append(self._read_entry(base_dir))
+            self.log("TPF: Reading entry #{}".format(i))
+            manifest['entries'].append(self._read_entry())
 
         manifest["end_header_pos"] = self.file.tell()
 
         return manifest
 
-    def _read_entry(self, base_dir):
+    def _read_entry(self):
         entry = {
             'header': OrderedDict([
                 ('data_offset', self.read(4)),
@@ -55,23 +55,23 @@ class TPFFile(BinaryFile):
         data_offset = self.to_int32(entry['header']['data_offset'])
         data_size = self.to_int32(entry['header']['data_size'])
         if data_offset > 0:
-            entry['actual_filename'] = lib.utils.normalize_filepath(entry['filename'], base_dir) + ".dds"
-            print("TPF: Reading data, offset = {}, size = {}, filename = {}, actual filename = {}".format(data_offset, data_size, entry['filename'], entry['actual_filename']))
+            entry['actual_filename'] = self.normalize_filepath(entry['filename']) + ".dds"
+            self.log("TPF: Reading data, offset = {}, size = {}, filename = {}, actual filename = {}".format(data_offset, data_size, entry['filename'], entry['actual_filename']))
             self.file.seek(data_offset)
             data = self.read(data_size)
-            lib.utils.write_data(entry['actual_filename'], data)
+            utils.write_data(entry['actual_filename'], data)
 
         self.file.seek(position)
 
         return entry
 
     def create_file(self, manifest):
-        print("TPF: Writing file {}".format(self.path))
+        self.log("TPF: Writing file {}".format(self.path))
 
         self.file.seek(manifest['end_header_pos'])
 
         for entry in manifest['entries']:
-            print("TPF: Writing entry filename for {} at offset {}".format(entry['actual_filename'], self.file.tell()))
+            self.log("TPF: Writing entry filename for {} at offset {}".format(entry['actual_filename'], self.file.tell()))
             entry['header']['filename_offset'] = self.int32_bytes(self.file.tell())
             self.write(entry['filename'].encode("shift_jis"), b"\x00")
 
@@ -79,7 +79,7 @@ class TPFFile(BinaryFile):
 
         size_sum = 0
         for entry in manifest['entries']:
-            print("TPF: Writing entry data for {} at offset {}".format(entry['actual_filename'], self.file.tell()))
+            self.log("TPF: Writing entry data for {} at offset {}".format(entry['actual_filename'], self.file.tell()))
             entry['header']['data_size'] = self.int32_bytes(os.path.getsize(entry['actual_filename']))
             size_sum += self.to_int32(entry['header']['data_size'])
             entry['header']['data_offset'] = self.int32_bytes(self.file.tell())
@@ -90,5 +90,5 @@ class TPFFile(BinaryFile):
         self.write_header(manifest)
 
         for entry in manifest['entries']:
-            print("TPF: Writing entry header for {} at offset {}".format(entry['actual_filename'], self.file.tell()))
+            self.log("TPF: Writing entry header for {} at offset {}".format(entry['actual_filename'], self.file.tell()))
             self.write_header(entry)

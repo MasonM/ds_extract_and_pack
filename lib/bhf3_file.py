@@ -1,14 +1,14 @@
 from _collections import OrderedDict
 
-from lib.binary_file import BinaryFile
-import lib.utils
+from .binary_file import BinaryFile
+from . import utils
 
 
 class BHF3File(BinaryFile):
     MAGIC_HEADER = b"BHF3"
 
-    def extract_file(self, base_dir):
-        print("BHF3: Parsing file {}".format(self.path))
+    def extract_file(self):
+        self.log("BHF3: Parsing file {}".format(self.path))
 
         manifest = {
             "header": OrderedDict([
@@ -26,13 +26,13 @@ class BHF3File(BinaryFile):
             raise ValueError("Invalid version: {:02X}".format(manifest['header']['version']))
 
         for i in range(self.to_int32(manifest['header']['record_count'])):
-            manifest['records'].append(self._read_record(base_dir))
+            manifest['records'].append(self._read_record())
 
         self.file.close()
         #pprint.pprint(self.data)
         return manifest
 
-    def _read_record(self, base_dir):
+    def _read_record(self):
         entry = {
             "header": OrderedDict([
                 ("record_separator", self.consume(0x40, 4)),
@@ -51,13 +51,13 @@ class BHF3File(BinaryFile):
         self.file.seek(self.to_int32(entry['header']['filename_offset']))
 
         entry['record_name'] = self.read_null_terminated_string()
-        entry['actual_filename'] = lib.utils.normalize_filepath(entry['record_name'], base_dir)
+        entry['actual_filename'] = self.normalize_filepath(entry['record_name'])
 
         self.file.seek(position)
         return entry
 
-    def create_file(self, manifest):
-        print("BHF3: Writing file {}".format(self.path))
+    def create_file(self, manifest, depth):
+        self.log("BHF3: Writing file {}".format(self.path))
 
         self.write_header(manifest)
         for record_data in manifest['records']:
