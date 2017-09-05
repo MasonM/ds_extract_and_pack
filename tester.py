@@ -39,36 +39,37 @@ def do_write_test(filename, manifest, cls):
 
 def do_read_write_test(filename, cls):
     manifest = do_read_test(os.path.join("..", filename), cls)
-    do_write_test(os.path.join(output_base_dir, filename), manifest, cls)
-    do_read_test(os.path.join(output_base_dir, filename), cls)
-
     manifest_filename = os.path.join(output_base_dir, "manifest")
     pickle.dump(manifest, open(manifest_filename, "wb"))
 
-tpf_file = "o1470"
-#tpf_file = "c3320"
-bnd3_file = "o1470.objbnd"
-#bnd3_file = "item.objbnd"
+    do_write_test(os.path.join(output_base_dir, filename), manifest, cls)
+    do_read_test(os.path.join(output_base_dir, filename), cls)
+
+tpf_file = "o1470."
+#tpf_file = "c3320."
+bnd3_file = "o1470.objbnd."
+#bnd3_file = "item.objbnd."
 dcx_file = bnd3_file
-#dcx_file = "m18_00_00_00.emeld"
-bdt_file = "dvdbnd1"
+#dcx_file = "m18_00_00_00.emeld."
+#bdt_file = "m10_0000.tpf"
+bdt_file = "dvdbnd1."
 
 test = "bdt"
 
 if test == "tpf":
-    do_read_write_test(tpf_file + ".tpf", TPFFile)
+    do_read_write_test(tpf_file + "tpf", TPFFile)
 elif test == "bnd3":
-    do_read_write_test(bnd3_file + ".bnd3", BND3File)
+    do_read_write_test(bnd3_file + "bnd3", BND3File)
 elif test == "bhd5":
-    do_read_write_test(bdt_file + ".bhd5", BHD5File)
+    do_read_write_test(bdt_file + "bhd5", BHD5File)
 elif test == "bdt":
-    #manifest = do_read_test(os.path.join("..", bdt_file + ".bdt"), BDTFile)
-    manifest_filename = os.path.join(output_base_dir, "manifest")
-    manifest = pickle.loads(open(manifest_filename, "rb").read())
-    do_write_test(os.path.join(output_base_dir, bdt_file + ".bdt"), manifest, BDTFile)
-    #do_read_write_test(bdt_file + ".bdt", BDTFile)
+    #manifest_filename = os.path.join(output_base_dir, "manifest")
+    #manifest = pickle.loads(open(manifest_filename, "rb").read())
+    #manifest = do_read_test(os.path.join("..", bdt_file + "bdt"), BDTFile)
+    #do_write_test(os.path.join(output_base_dir, bdt_file + "bdt"), manifest, BDTFile)
+    do_read_write_test(bdt_file + "bdt", BDTFile)
 elif test == "dcx":
-    do_read_write_test(dcx_file + ".dcx", DCXFile)
+    do_read_write_test(dcx_file + "dcx", DCXFile)
 
 #print(get_hash_from_string("/param/GeneratorParam_m10_02_00_00.param"))
 #pickle.dump(manifest, open(manifest_filename, "wb"))

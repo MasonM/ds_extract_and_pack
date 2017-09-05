@@ -2,6 +2,7 @@ import os
 from _collections import OrderedDict
 
 from lib.binary_file import BinaryFile
+import lib.utils
 
 
 class TPFFile(BinaryFile):
@@ -54,11 +55,11 @@ class TPFFile(BinaryFile):
         data_offset = self.to_int32(entry['header']['data_offset'])
         data_size = self.to_int32(entry['header']['data_size'])
         if data_offset > 0:
-            entry['actual_filename'] = self.normalize_filepath(entry['filename'], base_dir) + ".dds"
+            entry['actual_filename'] = lib.utils.normalize_filepath(entry['filename'], base_dir) + ".dds"
             print("TPF: Reading data, offset = {}, size = {}, filename = {}, actual filename = {}".format(data_offset, data_size, entry['filename'], entry['actual_filename']))
             self.file.seek(data_offset)
             data = self.read(data_size)
-            self.write_data(entry['actual_filename'], data)
+            lib.utils.write_data(entry['actual_filename'], data)
 
         self.file.seek(position)
 

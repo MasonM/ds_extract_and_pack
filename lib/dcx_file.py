@@ -3,8 +3,8 @@ import io
 import zlib
 from _collections import OrderedDict
 
-from lib.bnd3_file import BND3File
 from lib.binary_file import BinaryFile
+import lib.utils
 
 
 class DCXFile(BinaryFile):
@@ -19,7 +19,7 @@ class DCXFile(BinaryFile):
 
         manifest = {
             "header": OrderedDict([
-                ("dcx_signature", self.consume(self.MAGIC_HEADER)),
+                ("signature", self.consume(self.MAGIC_HEADER)),
                 ("unknown1", self.consume(0x10000, 4)),
                 ("unknown2", self.consume(0x18, 4)),
                 ("unknown3", self.consume(0x24, 4)),
@@ -48,11 +48,11 @@ class DCXFile(BinaryFile):
         uncompressed_filename = os.path.join(base_dir, os.path.basename(self.path).replace(".dcx", ""))
         manifest['uncompressed_filename'] = uncompressed_filename
 
-        if uncompressed_filename.endswith("bnd"):
-            with io.BytesIO(uncompressed_data) as bnd3_buffer:
-                manifest['bnd'] = BND3File(bnd3_buffer, uncompressed_filename).extract_file(base_dir)
+        file_cls = lib.utils.class_for_data(uncompressed_data)
+        if file_cls:
+            manifest['sub_manifest'] = file_cls(io.BytesIO(uncompressed_data), uncompressed_filename).extract_file(base_dir)
         else:
-            self.write_data(uncompressed_filename, uncompressed_data)
+            lib.utils.write_data(uncompressed_filename, uncompressed_data)
 
         return manifest
 
@@ -63,11 +63,8 @@ class DCXFile(BinaryFile):
 
         cur_position = self.file.tell()
         print("DCX: Writing uncompressed file {} at offset {}".format(manifest['uncompressed_filename'], cur_position))
-        if "bnd" in manifest:
-            with io.BytesIO() as bnd3_buffer:
-                BND3File(bnd3_buffer, manifest['uncompressed_filename']).create_file(manifest['bnd'])
-                bnd3_buffer.seek(0)
-                uncompressed_data = bnd3_buffer.read()
+        if 'sub_manifest' in manifest:
+            uncompressed_data = lib.utils.get_data_for_file(manifest['sub_manifest'], manifest['uncompressed_filename'])
         else:
             uncompressed_data = open(manifest['uncompressed_filename'], "rb").read()
 

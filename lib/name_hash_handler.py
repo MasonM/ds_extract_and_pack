@@ -6139,8 +6139,11 @@ def get_hash_from_string(s):
     return hash_val
 
 
-def build_name_hash_dict():
-    name_hash_dict = {}
-    for name in FILENAMES:
-        name_hash_dict[get_hash_from_string(name)] = name
-    return name_hash_dict
+name_hash_dict = {}
+
+
+def get_name_from_hash(hash):
+    if not name_hash_dict:
+        for name in FILENAMES:
+            name_hash_dict[get_hash_from_string(name)] = name
+    return name_hash_dict[hash]

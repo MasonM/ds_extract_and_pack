@@ -1,17 +1,8 @@
-import os
-
-
 class BinaryFile:
     def __init__(self, file, path):
         self.file = file
         self.path = path
         self.endian = "little"
-
-    def normalize_filepath(self, path, base_dir):
-        if path.lower().startswith("n:\\"):
-            path = path[3:]
-        path = os.path.join(base_dir, path.replace("\\", os.sep))
-        return os.path.normpath(path)
 
     def write(self, *args):
         for arg in args:
@@ -45,11 +36,6 @@ class BinaryFile:
         except UnicodeDecodeError as e:
             print("Failed to decode {}".format(buffer))
             raise e
-
-
-    def write_data(self, filepath, data):
-        os.makedirs(os.path.dirname(filepath), exist_ok=True)
-        open(filepath, 'wb').write(data)
 
     def int32_bytes(self, i):
         return i.to_bytes(4, byteorder=self.endian)

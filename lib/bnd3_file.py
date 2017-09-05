@@ -1,8 +1,8 @@
 import io
 from _collections import OrderedDict
 
-from lib.tpf_file import TPFFile
 from lib.binary_file import BinaryFile
+import lib.utils
 
 
 class BND3File(BinaryFile):
@@ -60,8 +60,8 @@ class BND3File(BinaryFile):
             print("BND3: Reading filename, offset = {}".format(filename_offset))
             self.file.seek(filename_offset)
             entry['filename'] = self.read_null_terminated_string()
-            entry['actual_filename'] = self.normalize_filepath(entry['filename'], base_dir)
-            #print("BND3: got filename %s" % entry['filename'])
+            entry['actual_filename'] = lib.utils.normalize_filepath(entry['filename'], base_dir)
+            # print("BND3: got filename %s" % entry['filename'])
 
         data_offset = self.to_int32(entry['header']['data_offset'])
         data_size = self.to_int32(entry['header']['data_size'])
@@ -71,11 +71,11 @@ class BND3File(BinaryFile):
             print("BND3: Reading data, offset = {}, size = {}, filename = {}".format(
                 data_offset, data_size, entry['actual_filename'])
             )
-            if data.startswith(TPFFile.MAGIC_HEADER):
-                with io.BytesIO(data) as tpf_buffer:
-                    entry['tpf'] = TPFFile(tpf_buffer, entry['actual_filename']).extract_file(base_dir)
+            file_cls = lib.utils.class_for_data(data)
+            if file_cls:
+                entry['sub_manifest'] = file_cls(io.BytesIO(data), entry['actual_filename']).extract_file(base_dir)
             else:
-                self.write_data(entry['actual_filename'], data)
+                lib.utils.write_data(entry['actual_filename'], data)
 
         self.file.seek(position)
 
@@ -99,11 +99,8 @@ class BND3File(BinaryFile):
             print("BND3: Writing entry data for {} at offset {}".format(entry['actual_filename'], cur_position))
             entry['header']['data_offset'] = self.int32_bytes(cur_position)
 
-            if 'tpf' in entry:
-                with io.BytesIO() as tpf_buffer:
-                    TPFFile(tpf_buffer, entry['actual_filename']).create_file(entry['tpf'])
-                    tpf_buffer.seek(0)
-                    self.write(tpf_buffer.read())
+            if 'sub_manifest' in entry:
+                self.write(lib.utils.get_data_for_file(entry['sub_manifest'], entry['actual_filename']))
             else:
                 self.write(open(entry['actual_filename'], "rb").read())
 
