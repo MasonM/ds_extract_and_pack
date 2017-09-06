@@ -1,6 +1,6 @@
 import io
 import os
-from itertools import chain
+import re
 
 from .bhd5_file import BHD5File
 from .bhf3_file import BHF3File
@@ -11,81 +11,86 @@ from . import utils
 class BDTFile(BinaryFile):
     MAGIC_HEADER = b"BDF307D7R6"
 
-    def extract_file(self):
-        self.log("BDT: Reading file {}".format(self.path))
+    def extract_file(self, depth):
+        self.log("Reading file {}".format(self.path), depth)
 
         self.consume(self.MAGIC_HEADER)
         self.consume(0x0, 6)
 
         header_filename = self._get_header_filename()
-        self.log("BDT: Using header file {}".format(header_filename))
+        self.log("Using header file {}".format(header_filename), depth)
         header_file = open(header_filename, "rb")
-        signature = header_file.read(4)
+        file_cls = utils.class_for_data(header_file.read(4), include_header_files=True)
         header_file.seek(0)
 
-        if signature == BHD5File.MAGIC_HEADER:
-            manifest = BHD5File(header_file, header_filename, self.depth, self.base_dir).extract_file()
-            self._extract_records(chain.from_iterable(bin_data['records'] for bin_data in manifest['bins']))
-        elif signature == BHF3File.MAGIC_HEADER:
-            manifest = BHF3File(header_file, header_filename, self.depth, self.base_dir).extract_file()
-            self._extract_records(manifest['records'])
-        else:
-            raise RuntimeError("Invalid signature in header file: {}".format(signature))
+        if file_cls not in [BHD5File, BHF3File]:
+            raise RuntimeError("Invalid signature in header file: {}".format(header_filename))
+
+        manifest = file_cls(header_file, header_filename, self.base_dir).extract_file(depth)
+        self._extract_records(manifest['records'], depth + 1)
 
         return manifest
 
     def _get_header_filename(self):
+        fixed_path = re.sub(r"(chr" + os.sep + r")([^\.]+)\.", r"\1\2" + os.sep + r"\2.", self.path)
         for ext in ('bhd5', 'bhd'):
-            bhd_filename = self.path.replace("bdt", ext)
-            if os.path.isfile(bhd_filename):
-                return bhd_filename
+            for path in (self.path, fixed_path):
+                bhd_filename = path.replace("bdt", ext)
+                if os.path.isfile(bhd_filename):
+                    return bhd_filename
+
         raise FileNotFoundError("Could not find BHD for BDT {}".format(self.path))
 
-    def _extract_records(self, records):
+    def _extract_records(self, records, depth):
         for record_data in records:
-            self.log("BDT: extracting {}".format(record_data['actual_filename']))
+            self.log("Processing {}".format(record_data['record_name']), depth)
 
             self.file.seek(self.to_int32(record_data['header']['record_offset']))
             data = self.read(self.to_int32(record_data['header']['record_size']))
             file_cls = utils.class_for_data(data)
-            if file_cls == self:
+            if file_cls is None:
+                self.log("Writing data for {} to {}".format(record_data['record_name'], record_data['actual_filename']), depth)
+                utils.write_data(record_data['actual_filename'], data)
+            elif file_cls == BDTFile:
                 # just store data for now, because we need to wait for the BHD to be extracted
                 record_data['bdt_data'] = io.BytesIO(data)
-            elif file_cls is not None:
-                record_data['sub_manifest'] = file_cls(io.BytesIO(data), record_data['actual_filename'], self.depth + 1).extract_file()
             else:
-                utils.write_data(record_data['actual_filename'], data)
+                record_data['sub_manifest'] = file_cls(io.BytesIO(data), record_data['actual_filename']).extract_file(depth + 1)
 
         for record_data in records:
             # Process any BDT files
             if 'bdt_data' in record_data:
-                record_data['sub_manifest'] = BDTFile(record_data['bdt_data'], record_data['actual_filename'], self.depth + 1).extract_file()
-                record_data['bdt_data'].close()
+                try:
+                    record_data['sub_manifest'] = BDTFile(record_data['bdt_data'], record_data['actual_filename']).extract_file(depth + 1)
+                    record_data.pop('bdt_data').close()
+                except FileNotFoundError:
+                    self.log("ERROR: Failed to find header file for {}".format(record_data['actual_filename']), depth)
+                    utils.write_data(record_data['actual_filename'], record_data.pop('bdt_data').read())
 
-    def create_file(self, manifest):
-        self.log("BDT: Writing file {}".format(self.path))
+    def create_file(self, manifest, depth):
+        self.log("Writing file {}".format(self.path), depth)
 
         self.write(self.MAGIC_HEADER)
         self.write(bytearray(6))
+        self._write_records(manifest['records'], depth)
 
-        if manifest['header']['signature'] == BHD5File.MAGIC_HEADER:
-            self._write_records(chain.from_iterable(bin_data['records'] for bin_data in manifest['bins']))
-            bhd5_file = self.path.replace("bdt", "bhd5")
-            BHD5File(open(bhd5_file, "wb"), bhd5_file).create_file(manifest)
-        elif manifest['header']['signature'] == BHF3File.MAGIC_HEADER:
-            self._write_records(manifest['records'])
-            bhf3_file = self.path.replace("bdt", "bhd")
-            BHF3File(open(bhf3_file, "wb"), bhf3_file).create_file(manifest)
+        file_cls = utils.class_for_data(manifest['header']['signature'], include_header_files=True)
+        if file_cls == BHD5File:
+            header_filename = self.path.replace("bdt", "bhd5")
+        elif file_cls == BHF3File:
+            header_filename = self.path.replace("bdt", "bhd")
         else:
             raise RuntimeError("Invalid signature in manifest: {}".format(manifest['header']['signature']))
 
-    def _write_records(self, records):
+        file_cls(open(header_filename, "wb"), header_filename).create_file(manifest)
+
+    def _write_records(self, records, depth):
         for record_data in records:
-            self.log("BDT: Writing data for {}".format(record_data['actual_filename']))
+            self.log("Writing data for {}".format(record_data['actual_filename']), depth)
             cur_position = self.file.tell()
             record_data['header']['record_offset'] = self.int32_bytes(cur_position)
             if 'sub_manifest' in record_data:
-                self.write(utils.get_data_for_file(record_data['sub_manifest'], record_data['actual_filename'], self.depth + 1))
+                self.write(utils.get_data_for_file(record_data['sub_manifest'], record_data['actual_filename'], depth + 1))
             else:
                 self.write(open(record_data['actual_filename'], "rb").read())
             data_size = self.file.tell() - cur_position

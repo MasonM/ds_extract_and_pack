@@ -1,14 +1,13 @@
 from _collections import OrderedDict
 
 from .binary_file import BinaryFile
-from . import utils
 
 
 class BHF3File(BinaryFile):
     MAGIC_HEADER = b"BHF3"
 
-    def extract_file(self):
-        self.log("BHF3: Parsing file {}".format(self.path))
+    def extract_file(self, depth):
+        self.log("Parsing file {}".format(self.path), depth)
 
         manifest = {
             "header": OrderedDict([
@@ -26,13 +25,13 @@ class BHF3File(BinaryFile):
             raise ValueError("Invalid version: {:02X}".format(manifest['header']['version']))
 
         for i in range(self.to_int32(manifest['header']['record_count'])):
-            manifest['records'].append(self._read_record())
+            manifest['records'].append(self._read_record(depth))
 
         self.file.close()
         #pprint.pprint(self.data)
         return manifest
 
-    def _read_record(self):
+    def _read_record(self, depth):
         entry = {
             "header": OrderedDict([
                 ("record_separator", self.consume(0x40, 4)),
@@ -57,7 +56,7 @@ class BHF3File(BinaryFile):
         return entry
 
     def create_file(self, manifest, depth):
-        self.log("BHF3: Writing file {}".format(self.path))
+        self.log("Writing file {}".format(self.path), depth)
 
         self.write_header(manifest)
         for record_data in manifest['records']:

@@ -3,14 +3,13 @@ from _collections import OrderedDict
 
 from .binary_file import BinaryFile
 from .name_hash_handler import get_name_from_hash
-from . import utils
 
 
 class BHD5File(BinaryFile):
     MAGIC_HEADER = b"BHD5"
 
-    def extract_file(self):
-        self.log("BHD5: Parsing file {}".format(self.path))
+    def extract_file(self, depth):
+        self.log("Parsing file {}".format(self.path), depth)
 
         manifest = {
             "header": OrderedDict([
@@ -21,19 +20,23 @@ class BHD5File(BinaryFile):
                 ("bin_record_offset", self.read(4)),
             ]),
             "bins": [],
+            "records": [],
         }
 
-        #self.log(self.to_int32(manifest['header']['file_size']))
+        # self.log(self.to_int32(manifest['header']['file_size']), depth)
 
         for i in range(self.to_int32(manifest["header"]['bin_count'])):
-            self.log("BHD5: Reading bin #{}".format(i))
-            manifest["bins"].append(self._read_bin())
+            self.log("Reading bin #{}".format(i), depth)
+            bin_data = self._read_bin(depth)
+            manifest["bins"].append(bin_data)
+            # Add ability to iterate over records for uniformity with BHF3File
+            manifest["records"] += bin_data['records']
 
         self.file.close()
-        #pprint.pprint(self.data)
+
         return manifest
 
-    def _read_bin(self):
+    def _read_bin(self, depth):
         bin_data = {
             "header": OrderedDict([
                 ("record_count", self.read(4)),
@@ -72,8 +75,8 @@ class BHD5File(BinaryFile):
 
         return entry
 
-    def create_file(self, manifest):
-        self.log("BHD5: Writing file {}".format(self.path))
+    def create_file(self, manifest, depth):
+        self.log("Writing file {}".format(self.path), depth)
 
         self.write_header(manifest)
         for bin_data in manifest['bins']:

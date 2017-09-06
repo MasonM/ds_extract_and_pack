@@ -11,11 +11,11 @@ class DCXFile(BinaryFile):
     MAGIC_HEADER = b"DCX\x00"
 
     def __init__(self, file, path, depth=1, base_dir=None):
-        super().__init__(file, path, depth, base_dir)
+        super().__init__(file, path, base_dir)
         self.endian = "big"
 
-    def extract_file(self):
-        self.log("DCX: Reading file {}".format(self.path))
+    def extract_file(self, depth):
+        self.log("Reading file {}".format(self.path), depth)
 
         manifest = {
             "header": OrderedDict([
@@ -50,21 +50,22 @@ class DCXFile(BinaryFile):
 
         file_cls = utils.class_for_data(uncompressed_data)
         if file_cls:
-            manifest['sub_manifest'] = file_cls(io.BytesIO(uncompressed_data), uncompressed_filename, self.depth + 1).extract_file()
+            manifest['sub_manifest'] = file_cls(io.BytesIO(uncompressed_data), uncompressed_filename).extract_file(depth +1)
         else:
+            self.log("Writing data to {}".format(uncompressed_filename), depth)
             utils.write_data(uncompressed_filename, uncompressed_data)
 
         return manifest
 
-    def create_file(self, manifest):
-        self.log("DCX: Writing file {}".format(self.path))
+    def create_file(self, manifest, depth):
+        self.log("Writing file {}".format(self.path), depth)
 
         self.file.seek(manifest['end_header_pos'])
 
         cur_position = self.file.tell()
-        self.log("DCX: Writing uncompressed file {} at offset {}".format(manifest['uncompressed_filename'], cur_position))
+        self.log("Writing uncompressed file {}".format(manifest['uncompressed_filename']), depth)
         if 'sub_manifest' in manifest:
-            uncompressed_data = utils.get_data_for_file(manifest['sub_manifest'], manifest['uncompressed_filename'], self.depth + 1)
+            uncompressed_data = utils.get_data_for_file(manifest['sub_manifest'], manifest['uncompressed_filename'], depth + 1)
         else:
             uncompressed_data = open(manifest['uncompressed_filename'], "rb").read()
 

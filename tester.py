@@ -26,14 +26,14 @@ def dir_prep(base_dir):
 
 def do_read_test(filename, cls):
     dir_prep(extract_base_dir)
-    manifest = cls(open(filename, "rb"), filename, 1, extract_base_dir).extract_file()
+    manifest = cls(open(filename, "rb"), filename, extract_base_dir).extract_file(depth=1)
     #pprint(manifest)
     return manifest
 
 
 def do_write_test(filename, manifest, cls):
     dir_prep(output_base_dir)
-    cls(open(filename, "wb"), filename).create_file(manifest)
+    cls(open(filename, "wb"), filename).create_file(manifest, depth=1)
 
 
 def do_read_write_test(filename, cls):
@@ -41,8 +41,8 @@ def do_read_write_test(filename, cls):
     manifest_filename = os.path.join(output_base_dir, "manifest")
     pickle.dump(manifest, open(manifest_filename, "wb"))
 
-    do_write_test(os.path.join(output_base_dir, filename), manifest, cls)
-    do_read_test(os.path.join(output_base_dir, filename), cls)
+    #do_write_test(os.path.join(output_base_dir, filename), manifest, cls)
+    #do_read_test(os.path.join(output_base_dir, filename), cls)
 
 tpf_file = "o1470."
 #tpf_file = "c3320."
@@ -51,7 +51,7 @@ bnd3_file = "o1470.objbnd."
 dcx_file = bnd3_file
 #dcx_file = "m18_00_00_00.emeld."
 #bdt_file = "m10_0000.tpf"
-bdt_file = "dvdbnd1."
+bdt_file = "dvdbnd0."
 
 test = "bdt"
 

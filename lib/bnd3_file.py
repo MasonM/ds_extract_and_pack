@@ -8,8 +8,8 @@ from . import utils
 class BND3File(BinaryFile):
     MAGIC_HEADER = b"BND3"
 
-    def extract_file(self):
-        self.log("BND3: Reading file {}".format(self.path))
+    def extract_file(self, depth):
+        self.log("Reading file {}".format(self.path), depth)
 
         manifest = {
             "header": OrderedDict([
@@ -28,14 +28,14 @@ class BND3File(BinaryFile):
             raise ValueError("Invalid version: {:02X}".format(manifest['header']['version']))
 
         for i in range(self.to_int32(manifest['header']['entry_count'])):
-            self.log("BND3: Reading entry #{}".format(i))
-            manifest['entries'].append(self._read_entry(version))
+            self.log("Reading entry #{}".format(i), depth)
+            manifest['entries'].append(self._read_entry(version, depth + 1))
 
         manifest["end_header_pos"] = self.file.tell()
 
         return manifest
 
-    def _read_entry(self, version):
+    def _read_entry(self, version, depth):
         entry = {
             "header": OrderedDict([
                 ("record_sep", self.consume(0x40, 4)),
@@ -57,37 +57,35 @@ class BND3File(BinaryFile):
         position = self.file.tell()
         filename_offset = self.to_int32(entry['header']['filename_offset'])
         if filename_offset > 0:
-            self.log("BND3: Reading filename, offset = {}".format(filename_offset))
             self.file.seek(filename_offset)
             entry['filename'] = self.read_null_terminated_string()
             entry['actual_filename'] = self.normalize_filepath(entry['filename'])
-            # self.log("BND3: got filename %s" % entry['filename'])
+            # self.log("got filename %s" % entry['filename'])
 
         data_offset = self.to_int32(entry['header']['data_offset'])
         data_size = self.to_int32(entry['header']['data_size'])
         if data_offset > 0:
             self.file.seek(data_offset)
+            self.log("Reading data, size = {}, filename = {}".format(data_size, entry['filename']), depth)
             data = self.read(data_size)
-            self.log("BND3: Reading data, offset = {}, size = {}, filename = {}".format(
-                data_offset, data_size, entry['actual_filename'])
-            )
             file_cls = utils.class_for_data(data)
             if file_cls:
-                entry['sub_manifest'] = file_cls(io.BytesIO(data), entry['actual_filename'], self.depth + 1).extract_file()
+                entry['sub_manifest'] = file_cls(io.BytesIO(data), entry['actual_filename']).extract_file(depth + 1)
             else:
+                self.log("Writing data to {}".format(entry['actual_filename']), depth)
                 utils.write_data(entry['actual_filename'], data)
 
         self.file.seek(position)
 
         return entry
 
-    def create_file(self, manifest):
-        self.log("BND3: Writing file {}".format(self.path))
+    def create_file(self, manifest, depth):
+        self.log("Writing file {}".format(self.path), depth)
 
         self.file.seek(manifest['end_header_pos'])
 
         for entry in manifest['entries']:
-            self.log("BND3: Writing entry filename for {} at offset {}".format(entry['actual_filename'], self.file.tell()))
+            self.log("Writing entry filename for {}".format(entry['actual_filename']), depth)
             entry['header']['filename_offset'] = self.int32_bytes(self.file.tell())
             self.write(entry['filename'].encode("shift_jis"), b"\x00")
 
@@ -96,11 +94,11 @@ class BND3File(BinaryFile):
 
         for entry in manifest['entries']:
             cur_position = self.file.tell()
-            self.log("BND3: Writing entry data for {} at offset {}".format(entry['actual_filename'], cur_position))
+            self.log("Writing entry data for {}".format(entry['actual_filename']), depth)
             entry['header']['data_offset'] = self.int32_bytes(cur_position)
 
             if 'sub_manifest' in entry:
-                self.write(utils.get_data_for_file(entry['sub_manifest'], entry['actual_filename'], self.depth + 1))
+                self.write(utils.get_data_for_file(entry['sub_manifest'], entry['actual_filename'], depth + 1))
             else:
                 self.write(open(entry['actual_filename'], "rb").read())
 
@@ -113,5 +111,5 @@ class BND3File(BinaryFile):
         self.write_header(manifest)
 
         for entry in manifest['entries']:
-            self.log("BND3: Writing entry header for {} at offset {}".format(entry['actual_filename'], self.file.tell()))
+            self.log("Writing entry header for {}".format(entry['actual_filename']), depth)
             self.write_header(entry)
