@@ -5,7 +5,7 @@ import re
 from .bhd5_file import BHD5File
 from .bhf3_file import BHF3File
 from .binary_file import BinaryFile
-from . import utils
+from . import utils, c4110_replacement
 
 
 class BDTFile(BinaryFile):
@@ -17,25 +17,34 @@ class BDTFile(BinaryFile):
         self.consume(self.MAGIC_HEADER)
         self.consume(0x0, 6)
 
-        header_filename = self._get_header_filename()
-        self.log("Using header file {}".format(header_filename), depth)
-        header_file = open(header_filename, "rb")
-        file_cls = utils.class_for_data(header_file.read(4), include_header_files=True)
-        header_file.seek(0)
+        if self.path.endswith("c4110.chrtpfbdt"):
+            manifest = BHF3File(io.BytesIO(c4110_replacement.DATA), self.path[:-3] + "bhd", self.base_dir).extract_file(depth)
+        else:
+            header_filename = self._get_header_filename()
+            self.log("Using header file {}".format(header_filename), depth)
+            header_file = open(header_filename, "rb")
+            file_cls = utils.class_for_data(header_file.read(4), include_header_files=True)
+            header_file.seek(0)
 
-        if file_cls not in [BHD5File, BHF3File]:
-            raise RuntimeError("Invalid signature in header file: {}".format(header_filename))
+            if file_cls not in [BHD5File, BHF3File]:
+                raise RuntimeError("Invalid signature in header file: {}".format(header_filename))
 
-        manifest = file_cls(header_file, header_filename, self.base_dir).extract_file(depth)
+            manifest = file_cls(header_file, header_filename, self.base_dir).extract_file(depth)
+
         self._extract_records(manifest['records'], depth + 1)
 
         return manifest
 
     def _get_header_filename(self):
-        fixed_path = re.sub(r"(chr" + os.sep + r")([^\.]+)\.", r"\1\2" + os.sep + r"\2.", self.path)
+        # Convert path like chr/c2320.chrtpfbdt into chr/c2320/c2320.chrtpfbdt
+        fixed_path = os.sep.join([
+            os.path.dirname(self.path),
+            os.path.basename(self.path).split(".")[0],
+            os.path.basename(self.path)
+        ])
         for ext in ('bhd5', 'bhd'):
             for path in (self.path, fixed_path):
-                bhd_filename = path.replace("bdt", ext)
+                bhd_filename = path[:-3] + ext
                 if os.path.isfile(bhd_filename):
                     return bhd_filename
 
@@ -76,9 +85,9 @@ class BDTFile(BinaryFile):
 
         file_cls = utils.class_for_data(manifest['header']['signature'], include_header_files=True)
         if file_cls == BHD5File:
-            header_filename = self.path.replace("bdt", "bhd5")
+            header_filename = self.path[:-3] + "bhd5"
         elif file_cls == BHF3File:
-            header_filename = self.path.replace("bdt", "bhd")
+            header_filename = self.path[:-3] + "bhd"
         else:
             raise RuntimeError("Invalid signature in manifest: {}".format(manifest['header']['signature']))
 

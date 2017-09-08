@@ -51,7 +51,7 @@ bnd3_file = "o1470.objbnd."
 dcx_file = bnd3_file
 #dcx_file = "m18_00_00_00.emeld."
 #bdt_file = "m10_0000.tpf"
-bdt_file = "dvdbnd0."
+bdt_file = "dvdbnd3."
 
 test = "bdt"
 

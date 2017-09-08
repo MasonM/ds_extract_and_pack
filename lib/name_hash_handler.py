@@ -1,3 +1,6 @@
+# Modified version of https://github.com/HotPocketRemix/UnpackDarkSoulsForModding/blob/9d5b2919c9d3ba7df054e54860594b9f75be4d94/name_hash_handler.py
+# Original by https://github.com/HotPocketRemix
+
 FILENAMES = [
     "/chr/c0000.anibnd.dcx",
     "/chr/c0000.chrbnd.dcx",

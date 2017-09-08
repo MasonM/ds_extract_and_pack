@@ -1,6 +1,6 @@
 import io
 import os
-
+import hashlib
 
 from . import bdt_file, tpf_file, dcx_file, bnd3_file, bhf3_file, bhd5_file
 
@@ -32,9 +32,13 @@ def get_data_for_file(sub_manifest, filename, depth):
 
 def write_data(filepath, data):
     os.makedirs(os.path.dirname(filepath), exist_ok=True)
-    if not os.path.isfile(filepath):
-        open(filepath, 'wb').write(data)
-    elif os.stat(filepath).st_size != len(data):
-        print("WARN: File already exists and has different size: {}".format(filepath))
-    else:
-        print("WARN: File already exists and has same size: {}".format(filepath))
+    if os.path.isfile(filepath):
+        self_digest = hashlib.md5(data).hexdigest()
+        other_digest = hashlib.md5(open(filepath, "rb").read()).hexdigest()
+        if self_digest == other_digest:
+            print("WARN: File already exists and has same hash: {}".format(filepath))
+            return
+        # This seems to only happen with *.sibcam and *.hkx files
+        print("ERROR: File already exists and has different hash: {}".format(filepath))
+    open(filepath, 'wb').write(data)
+
