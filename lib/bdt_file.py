@@ -91,7 +91,7 @@ class BDTFile(BinaryFile):
         else:
             raise RuntimeError("Invalid signature in manifest: {}".format(manifest['header']['signature']))
 
-        file_cls(open(header_filename, "wb"), header_filename).create_file(manifest)
+        file_cls(open(header_filename, "wb"), header_filename).create_file(manifest, depth)
 
     def _write_records(self, records, depth):
         for record_data in records:
