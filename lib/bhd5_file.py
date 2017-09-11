@@ -21,6 +21,8 @@ class BHD5File(BinaryFile):
             ]),
             "bins": [],
             "records": [],
+            "header_file_cls": self.__class__,
+            "actual_header_filename": self.path,
         }
 
         # self.log(self.to_int32(manifest['header']['file_size']), depth)

@@ -19,6 +19,8 @@ class BHF3File(BinaryFile):
                 ("padding2", self.consume(0x0, 8)),
             ]),
             "records": [],
+            "header_file_cls": self.__class__,
+            "actual_header_filename": self.path,
         }
 
         if self.to_int32(manifest['header']['version']) not in (0x74, 0x54):

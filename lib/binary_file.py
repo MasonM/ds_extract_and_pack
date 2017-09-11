@@ -39,7 +39,7 @@ class BinaryFile:
         try:
             return buffer.decode("shift_jis")
         except UnicodeDecodeError as e:
-            self.log("Failed to decode {}".format(buffer))
+            self.log("Failed to decode {}".format(buffer), 1)
             raise e
 
     def normalize_filepath(self, path):

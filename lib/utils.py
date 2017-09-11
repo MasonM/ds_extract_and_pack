@@ -2,14 +2,11 @@ import io
 import os
 import hashlib
 
-from . import bdt_file, tpf_file, dcx_file, bnd3_file, bhf3_file, bhd5_file
+from . import bdt_file, tpf_file, dcx_file, bnd3_file
 
 
-def class_for_data(data, include_header_files=False):
+def class_for_data(data):
     classes_to_check = [bnd3_file.BND3File, tpf_file.TPFFile, dcx_file.DCXFile, bdt_file.BDTFile]
-
-    if include_header_files:
-        classes_to_check += bdt_file.BDTFile.HEADER_FILE_CLS
 
     for file_cls in classes_to_check:
         if data.startswith(file_cls.MAGIC_HEADER):
@@ -34,6 +31,7 @@ def get_data_for_file_cls(file_cls, sub_manifest, filename, depth):
         buffer.seek(0)
         return buffer.read()
 
+
 def write_data(filepath, data):
     os.makedirs(os.path.dirname(filepath), exist_ok=True)
     if os.path.isfile(filepath):
@@ -49,4 +47,3 @@ def write_data(filepath, data):
     file.write(data)
     file.seek(0)
     return file
-
