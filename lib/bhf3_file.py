@@ -50,6 +50,8 @@ class BHF3File(BinaryFile):
         self.file.seek(self.to_int32(entry['header']['filename_offset']))
 
         entry['record_name'] = self.read_null_terminated_string()
+        if not entry['record_name']:
+            raise ValueError("Got empty record name")
         entry['actual_filename'] = self.normalize_filepath(entry['record_name'])
 
         self.file.seek(position)
@@ -61,3 +63,7 @@ class BHF3File(BinaryFile):
         self.write_header(manifest)
         for record_data in manifest['records']:
             self.write_header(record_data)
+            current_position = self.file.tell()
+            self.file.seek(self.to_int32(record_data['header']['filename_offset']))
+            self.write(record_data['record_name'].encode("shift_jis"), b"\x00")
+            self.file.seek(current_position)
