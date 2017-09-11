@@ -6,29 +6,33 @@ from . import bdt_file, tpf_file, dcx_file, bnd3_file, bhf3_file, bhd5_file
 
 
 def class_for_data(data, include_header_files=False):
-    file_classes = [bnd3_file.BND3File, tpf_file.TPFFile, dcx_file.DCXFile, bdt_file.BDTFile]
-    if include_header_files:
-        file_classes += [bhd5_file.BHD5File, bhf3_file.BHF3File]
+    classes_to_check = [bnd3_file.BND3File, tpf_file.TPFFile, dcx_file.DCXFile, bdt_file.BDTFile]
 
-    for file_cls in file_classes:
+    if include_header_files:
+        classes_to_check += bdt_file.BDTFile.HEADER_FILE_CLS
+
+    for file_cls in classes_to_check:
         if data.startswith(file_cls.MAGIC_HEADER):
             return file_cls
     return None
 
 
 def get_data_for_file(sub_manifest, filename, depth):
-    file_cls = class_for_data(sub_manifest['header']['signature'], include_header_files=True)
+    file_cls = class_for_data(sub_manifest['header']['signature'])
     if not file_cls:
         raise RuntimeError("Failed to find file class to parse file {} with signature {}".format(
             filename,
             sub_manifest['header']['signature'])
         )
 
+    return get_data_for_file_cls(file_cls, sub_manifest, filename, depth)
+
+
+def get_data_for_file_cls(file_cls, sub_manifest, filename, depth):
     with io.BytesIO() as buffer:
         file_cls(buffer, filename).create_file(sub_manifest, depth)
         buffer.seek(0)
         return buffer.read()
-
 
 def write_data(filepath, data):
     os.makedirs(os.path.dirname(filepath), exist_ok=True)
@@ -40,5 +44,9 @@ def write_data(filepath, data):
             return
         # This seems to only happen with *.sibcam and *.hkx files
         print("ERROR: File already exists and has different hash: {}".format(filepath))
-    open(filepath, 'wb').write(data)
+
+    file = open(filepath, 'w+b')
+    file.write(data)
+    file.seek(0)
+    return file
 

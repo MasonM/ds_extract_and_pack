@@ -62,7 +62,6 @@ class DCXFile(BinaryFile):
 
         self.file.seek(manifest['end_header_pos'])
 
-        cur_position = self.file.tell()
         self.log("Writing uncompressed file {}".format(manifest['uncompressed_filename']), depth)
         if 'sub_manifest' in manifest:
             uncompressed_data = utils.get_data_for_file(manifest['sub_manifest'], manifest['uncompressed_filename'], depth + 1)
