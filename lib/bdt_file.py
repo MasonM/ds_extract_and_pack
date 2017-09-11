@@ -63,12 +63,12 @@ class BDTFile(BinaryFile):
             filename = record_data['actual_filename']
 
             file_cls = utils.class_for_data(data)
-            if file_cls is None or record_data['record_name'].endswith("hkxbdt"):
+            if file_cls is None or filename.endswith("c4110.chrtpfbdt"):
                 self.log("Writing data for {} to {}".format(record_data['record_name'], filename), depth)
                 utils.write_data(filename, data)
             elif file_cls == BDTFile:
                 # just store data for now, because we need to wait for the BHD to be extracted
-                record_data['bdt_data'] = utils.write_data(filename, data)
+                record_data['bdt_data'] = io.BytesIO(data)
             else:
                 record_data['sub_manifest'] = file_cls(io.BytesIO(data), filename).extract_file(depth + 1)
 
@@ -76,8 +76,7 @@ class BDTFile(BinaryFile):
             # Process any BDT files
             if 'bdt_data' in record_data:
                 self.log("Processing record num {} BDT {}".format(record_num, record_data['record_name']), depth)
-                record_data['sub_manifest'] = BDTFile(record_data['bdt_data'], record_data['actual_filename']).extract_file(depth + 1)
-                record_data.pop('bdt_data').close()
+                record_data['sub_manifest'] = BDTFile(record_data.pop('bdt_data'), record_data['actual_filename']).extract_file(depth + 1)
 
     def create_file(self, manifest, depth):
         self.log("Writing file {}".format(self.path), depth)

@@ -40,7 +40,9 @@ def do_read_write_test(filename, cls):
     manifest = do_read_test(os.path.join("..", "test_files", filename), cls)
     manifest_filename = os.path.join(output_base_dir, "manifest")
     pickle.dump(manifest, open(manifest_filename, "wb"))
+    #return
 
+    #manifest = pickle.loads(open(manifest_filename, "rb").read())
     do_write_test(os.path.join(output_base_dir, filename), manifest, cls)
 
     if "header_file_cls" in manifest:
