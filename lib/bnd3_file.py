@@ -14,8 +14,8 @@ class BND3File(BinaryFile):
         manifest = {
             "header": OrderedDict([
                 ("signature", self.consume(self.MAGIC_HEADER)),
-                ("unknown_bytes", self.read(8)),
-                ("version", self.read(4)),
+                ("id", self.read(8)),
+                ("flags", self.read(4)),
                 ("entry_count", self.read(4)),
                 ("header_size", self.read(4)),
                 ("padding", self.consume(0x0, 8)),
@@ -23,19 +23,19 @@ class BND3File(BinaryFile):
             "entries": [],
         }
 
-        version = self.to_int32(manifest['header']['version'])
-        if version not in (0x74, 0x54, 0x70):
-            raise ValueError("Invalid version: {:02X}".format(manifest['header']['version']))
+        flags = self.to_int32(manifest['header']['flags'])
+        if flags not in (0x74, 0x54, 0x70):
+            raise ValueError("Invalid flags: {:02X}".format(manifest['header']['flags']))
 
         for i in range(self.to_int32(manifest['header']['entry_count'])):
             self.log("Reading entry #{}".format(i), depth)
-            manifest['entries'].append(self._read_entry(version, depth + 1))
+            manifest['entries'].append(self._read_entry(flags, depth + 1))
 
         manifest["end_header_pos"] = self.file.tell()
 
         return manifest
 
-    def _read_entry(self, version, depth):
+    def _read_entry(self, flags, depth):
         entry = {
             "header": OrderedDict([
                 ("record_sep", self.consume(0x40, 4)),
@@ -46,7 +46,7 @@ class BND3File(BinaryFile):
             ]),
         }
 
-        if version in (0x74, 0x54):
+        if flags in (0x74, 0x54):
             entry['header']['redundant_size'] = self.read(4)
             if entry['header']['redundant_size'] != entry['header']['data_size']:
                 raise ValueError("Expected size {:02x}, got {:02x}".format(
@@ -107,7 +107,7 @@ class BND3File(BinaryFile):
 
             data_size = self.file.tell() - cur_position
             entry['header']['data_size'] = self.int32_bytes(data_size)
-            if self.to_int32(manifest['header']['version']) in (0x74, 0x54):
+            if self.to_int32(manifest['header']['flags']) in (0x74, 0x54):
                 entry['header']['redundant_size'] = entry['header']['data_size']
 
             if data_size % 16 > 0:
