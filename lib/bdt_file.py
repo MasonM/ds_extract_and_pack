@@ -84,8 +84,10 @@ class BDTFile(BinaryFile):
         self.write(self.MAGIC_HEADER)
         self.write(bytearray(6))
 
+        records = sorted(enumerate(manifest['records']), key=lambda r: self.to_int32(r[1]['header']['record_offset']))
+
         bdt_data = {}
-        for record_num, record_data in enumerate(manifest['records']):
+        for record_num, record_data in records:
             if 'sub_manifest' in record_data and record_data['record_name'].endswith("bdt"):
                 filename = record_data['actual_filename']
                 if not filename.endswith("c4110.chrtpfbdt"):
@@ -95,7 +97,7 @@ class BDTFile(BinaryFile):
                     bdt_data[filename] = utils.get_data_for_file_cls(BDTFile, sub_manifest, record_data['actual_filename'], depth + 1)
                     sub_manifest["header_file_cls"](open(actual_header_filename, "wb"), actual_header_filename).create_file(sub_manifest, depth + 1)
 
-        for record_num, record_data in enumerate(manifest['records']):
+        for record_num, record_data in records:
             filename = record_data['actual_filename']
             self.log("Writing data for record num {}, name {}, actual name = {}".format(record_num, record_data['record_name'], filename), depth)
             cur_position = self.file.tell()

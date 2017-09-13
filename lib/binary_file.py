@@ -66,7 +66,7 @@ class BinaryFile:
     def log(self, msg, depth):
         prefix = ""
         if depth > 1:
-            prefix += ("  " * depth) + "|- "
+            prefix += ("  " * (depth - 1)) + "|"
         prefix += self.__class__.__name__.replace("File", "")
         prefix += "(offset=" + str(self.file.tell()) + "): "
         print(prefix + msg)
