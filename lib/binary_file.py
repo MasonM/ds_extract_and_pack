@@ -47,6 +47,11 @@ class BinaryFile:
             path = path[3:]
 
         path = path.lstrip("\\").replace("\\", "/")
+
+        # Hack to fix menu TPFs that have duplicate files
+        if os.path.basename(os.path.dirname(self.path)) == "menu":
+            path = os.path.join(os.path.basename(self.path).rsplit('.')[0], path)
+
         path = os.path.join(self.base_dir, path)
 
         # Flatten directory structure

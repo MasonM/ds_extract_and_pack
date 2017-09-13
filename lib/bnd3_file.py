@@ -110,8 +110,9 @@ class BND3File(BinaryFile):
             if self.to_int32(manifest['header']['flags']) in (0x74, 0x54):
                 entry['header']['redundant_size'] = entry['header']['data_size']
 
-            if data_size % 16 > 0:
-                self.write(b"\x00" *  (16 - (data_size % 16))) # padding
+            if entry != manifest['entries'][-1]:
+                if data_size % 16 > 0:
+                    self.write(b"\x00" *  (16 - (data_size % 16))) # padding
 
         self.file.seek(0)
         self.write_header(manifest)
