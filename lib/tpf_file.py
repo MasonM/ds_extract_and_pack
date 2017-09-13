@@ -75,7 +75,8 @@ class TPFFile(BinaryFile):
             entry['header']['filename_offset'] = self.int32_bytes(self.file.tell())
             self.write(entry['filename'].encode("shift_jis"), b"\x00")
 
-        self.write(b"\x00" * 48) # padding
+        padding = (16 * len(manifest['entries']))
+        self.write(b"\x00" * padding)
 
         size_sum = 0
         for entry in manifest['entries']:

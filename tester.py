@@ -1,6 +1,8 @@
 import os
 import shutil
 import pickle
+import filecmp
+import sys
 
 from lib.bdt_file import BDTFile
 from lib.bhd5_file import BHD5File
@@ -10,6 +12,7 @@ from lib.dcx_file import DCXFile
 
 
 extract_base_dir = os.path.abspath("test")
+second_extract_base_dir = os.path.abspath("second_test")
 output_base_dir = os.path.abspath("test_output")
 
 
@@ -37,13 +40,14 @@ def do_write_test(filename, manifest, cls):
 
 
 def do_read_write_test(filename, cls):
-    manifest = do_read_test(os.path.join("..", "test_files", filename), cls)
+    in_filename = os.path.join("..", "test_files", filename)
+    out_filename = os.path.join(output_base_dir, filename)
     manifest_filename = os.path.join(output_base_dir, "manifest")
-    pickle.dump(manifest, open(manifest_filename, "wb"))
-    #return
 
-    #manifest = pickle.loads(open(manifest_filename, "rb").read())
-    do_write_test(os.path.join(output_base_dir, filename), manifest, cls)
+    manifest = do_read_test(in_filename, cls)
+    pickle.dump(manifest, open(manifest_filename, "wb"))
+
+    do_write_test(out_filename, manifest, cls)
 
     if "header_file_cls" in manifest:
         header_filepath = os.path.join(output_base_dir, os.path.basename(manifest["actual_header_filename"]))
@@ -51,18 +55,27 @@ def do_read_write_test(filename, cls):
         manifest["header_file_cls"](file, header_filepath).create_file(manifest, 1)
         file.close()
 
-    do_read_test(os.path.join(output_base_dir, filename), cls)
+    dir_prep(second_extract_base_dir)
+    cls(open(out_filename, "rb"), out_filename, second_extract_base_dir).extract_file(depth=1)
 
-tpf_file = "o1470."
-#tpf_file = "c3320."
+    if filecmp.cmp(in_filename, out_filename):
+        print("Files identical")
+    else:
+        print("Files differ")
+        print("hexdiff {} {}".format(os.path.abspath(in_filename), out_filename))
+        #filecmp.dircmp(extract_base_dir, second_extract_base_dir).report_full_closure()
+
+
+#tpf_file = "o1470."
+tpf_file = "c3320."
 bnd3_file = "o1470.objbnd."
-#bnd3_file = "item.objbnd."
-dcx_file = bnd3_file
-#dcx_file = "m18_00_00_00.emeld."
+#bnd3_file = "c5200.anibnd."
+#dcx_file = bnd3_file
+dcx_file = "m18_00_00_00.emeld."
 #bdt_file = "m10_0000.tpf"
 #bdt_file = "m16_0002.tpf"
 #bdt_file = "good_c4100.chrtpf"
-bdt_file = "dvdbnd0."
+bdt_file = "dvdbnd2."
 
 test = "bdt"
 

@@ -16,7 +16,7 @@ class BHF3File(BinaryFile):
                 ("version", self.read(4)),
                 ("record_count", self.read(4)),
                 ("header_size", self.read(4)),
-                ("padding2", self.consume(0x0, 8)),
+                ("padding", self.consume(0x0, 8)),
             ]),
             "records": [],
             "header_file_cls": self.__class__,

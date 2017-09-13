@@ -90,7 +90,10 @@ class BND3File(BinaryFile):
             self.write(entry['filename'].encode("shift_jis"), b"\x00")
 
         manifest['header']['header_size'] = self.int32_bytes(self.file.tell())
-        self.write(b"\x00" * 4) # padding
+
+        if self.file.tell() % 16 > 0:
+            padding = 16 - (self.file.tell() % 16)
+            self.write(b"\x00" * padding)
 
         for entry in manifest['entries']:
             cur_position = self.file.tell()
@@ -106,6 +109,9 @@ class BND3File(BinaryFile):
             entry['header']['data_size'] = self.int32_bytes(data_size)
             if self.to_int32(manifest['header']['version']) in (0x74, 0x54):
                 entry['header']['redundant_size'] = entry['header']['data_size']
+
+            if data_size % 16 > 0:
+                self.write(b"\x00" *  (16 - (data_size % 16))) # padding
 
         self.file.seek(0)
         self.write_header(manifest)

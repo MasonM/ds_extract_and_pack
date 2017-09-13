@@ -110,3 +110,6 @@ class BDTFile(BinaryFile):
             record_data['header']['record_size'] = self.int32_bytes(data_size)
             if 'redundant_size' in record_data['header']:
                 record_data['header']['redundant_size'] = record_data['header']['record_size']
+            if self.file.tell() % 16 > 0:
+                padding = 16 - (self.file.tell() % 16)
+                self.write(b"\x00" * padding)
