@@ -16,10 +16,7 @@ class TPFFile(BinaryFile):
                 ('signature', self.consume(self.MAGIC_HEADER)),
                 ("size_sum", self.read(4)),
                 ("entry_count", self.read(4)),
-                ("flag1", self.read(1)),
-                ("flag2", self.read(1)),
-                ("encoding", self.read(1)),
-                ("flag3", self.read(1)),
+                ("flags", self.consume(0x20300, 4)),
             ]),
             'entries': [],
         }
@@ -37,12 +34,9 @@ class TPFFile(BinaryFile):
             'header': OrderedDict([
                 ('data_offset', self.read(4)),
                 ('data_size', self.read(4)),
-                ('format', self.read(1)),
-                ('type', self.read(1)),
-                ('mipmap_count', self.read(1)),
-                ('flags', self.read(1)),
+                ('id', self.read(4)),
                 ('filename_offset', self.read(4)),
-                ('unknown', self.read(4)),
+                ('padding', self.consume(0x0, 4)),
             ]),
         }
 
