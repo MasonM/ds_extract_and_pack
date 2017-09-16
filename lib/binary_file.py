@@ -11,9 +11,6 @@ class BinaryFile:
         self.endian = "little"
         self.base_dir = base_dir or os.path.dirname(path)
 
-    def manifest(self, header):
-        return Manifest(self.__class__, self.endian, header)
-
     def write(self, *args):
         for arg in args:
             self.file.write(arg)
@@ -80,15 +77,13 @@ class BinaryFile:
 
 
 class Manifest:
-    def __init__(self, file_cls, endian, header):
-        self.file_cls = file_cls
+    def __init__(self, binary_file_reader, header):
+        self.file_cls = binary_file_reader.__class__
+        self.path = binary_file_reader.path
+        self.endian = binary_file_reader.endian
         self.header = OrderedDict(header)
-        self.endian = endian
 
     def int32(self, key):
-        if key not in self.header:
-            raise IndexError
-
         return int.from_bytes(self.header[key], byteorder=self.endian, signed=False)
 
     def get_data(self, filename, depth):

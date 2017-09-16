@@ -62,20 +62,20 @@ class BDTFile(BinaryFile):
             data = self.read(record.int32('record_size'))
 
             file_cls = utils.class_for_data(data)
-            if file_cls is None or record.actual_filename.endswith("c4110.chrtpfbdt"):
-                self.log("Writing data for {} to {}".format(record.record_name, record.actual_filename), depth)
-                utils.write_data(record.actual_filename, data)
+            if file_cls is None or record.path.endswith("c4110.chrtpfbdt"):
+                self.log("Writing data for {} to {}".format(record.record_name, record.path), depth)
+                utils.write_data(record.path, data)
             elif file_cls == BDTFile:
                 # just store data for now, because we need to wait for the BHD to be extracted
                 record.bdt_data = io.BytesIO(data)
             else:
-                record.sub_manifest = file_cls(io.BytesIO(data), record.actual_filename).extract_file(depth + 1)
+                record.sub_manifest = file_cls(io.BytesIO(data), record.path).extract_file(depth + 1)
 
         for record_num, record in enumerate(records):
             # Process any BDT files
             if hasattr(record, 'bdt_data'):
                 self.log("Processing record num {} BDT {}".format(record_num, record.record_name), depth)
-                record.sub_manifest = BDTFile(record.bdt_data, record.actual_filename).extract_file(depth + 1)
+                record.sub_manifest = BDTFile(record.bdt_data, record.path).extract_file(depth + 1)
                 del record.bdt_data
 
     def create_file(self, manifest, depth):
@@ -91,34 +91,33 @@ class BDTFile(BinaryFile):
             if not (hasattr(record, 'sub_manifest') and record.record_name.endswith("bdt")):
                 continue
 
-            actual_header_filename = record.sub_manifest.actual_header_filename
             self.log("Writing BDT data for record num {}, name {}, actual name = {}".format(
                 record_num,
                 record.record_name,
-                record.actual_filename
+                record.path
             ), depth)
 
-            bdt_data[record.actual_filename] =  record.sub_manifest.get_data(record.actual_filename, depth + 1)
+            bdt_data[record.path] =  record.sub_manifest.get_data(record.path, depth + 1)
 
             record.sub_manifest\
-                .file_cls(open(actual_header_filename, "wb"), actual_header_filename)\
+                .file_cls(open(record.sub_manifest.path, "wb"), record.sub_manifest.path)\
                 .create_file(record.sub_manifest, depth + 1)
 
         for record_num, record in records:
             self.log("Writing data for record num {}, name {}, actual name = {}".format(
                 record_num,
                 record.record_name,
-                record.actual_filename
+                record.path
             ), depth)
 
             cur_position = self.file.tell()
             record.header['record_offset'] = self.int32_bytes(cur_position)
-            if record.actual_filename in bdt_data:
-                self.write(bdt_data[record.actual_filename])
-            elif hasattr(record, 'sub_manifest') and not record.actual_filename.endswith("c4110.chrtpfbdt"):
-                self.write(record.sub_manifest.get_data(record.actual_filename, depth + 1))
+            if record.path in bdt_data:
+                self.write(bdt_data[record.path])
+            elif hasattr(record, 'sub_manifest') and not record.path.endswith("c4110.chrtpfbdt"):
+                self.write(record.sub_manifest.get_data(record.path, depth + 1))
             else:
-                self.write(open(record.actual_filename, "rb").read())
+                self.write(open(record.path, "rb").read())
             data_size = self.file.tell() - cur_position
             record.header['record_size'] = self.int32_bytes(data_size)
             if 'redundant_size' in record.header:

@@ -1,6 +1,6 @@
 import io
 
-from .binary_file import BinaryFile
+from .binary_file import BinaryFile, Manifest
 from . import utils
 
 
@@ -10,7 +10,7 @@ class BND3File(BinaryFile):
     def extract_file(self, depth):
         self.log("Reading file {}".format(self.path), depth)
 
-        manifest = self.manifest(header=[
+        manifest = Manifest(self, header=[
             ("signature", self.consume(self.MAGIC_HEADER)),
             ("id", self.read(8)),
             ("flags", self.read(4)),
@@ -32,7 +32,7 @@ class BND3File(BinaryFile):
         return manifest
 
     def _read_record(self, flags, depth):
-        record = self.manifest(header=[
+        record = Manifest(self, header=[
             ("record_sep", self.consume(0x40, 4)),
             ('data_size', self.read(4)),
             ('data_offset', self.read(4)),
@@ -52,7 +52,7 @@ class BND3File(BinaryFile):
         if record.int32('filename_offset') > 0:
             self.file.seek(record.int32('filename_offset'))
             record.filename = self.read_null_terminated_string()
-            record.actual_filename = self.normalize_filepath(record.filename)
+            record.path = self.normalize_filepath(record.filename)
             # self.log("got filename %s" % record['filename'])
 
         if record.int32('data_offset') > 0:
@@ -61,10 +61,10 @@ class BND3File(BinaryFile):
             data = self.read(record.int32('data_size'))
             file_cls = utils.class_for_data(data)
             if file_cls:
-                record.sub_manifest = file_cls(io.BytesIO(data), record.actual_filename).extract_file(depth + 1)
+                record.sub_manifest = file_cls(io.BytesIO(data), record.path).extract_file(depth + 1)
             else:
-                self.log("Writing data to {}".format(record.actual_filename), depth)
-                utils.write_data(record.actual_filename, data)
+                self.log("Writing data to {}".format(record.path), depth)
+                utils.write_data(record.path, data)
 
         self.file.seek(position)
 
@@ -76,7 +76,7 @@ class BND3File(BinaryFile):
         self.file.seek(manifest.end_header_pos)
 
         for record in manifest.records:
-            self.log("Writing record filename for {}".format(record.actual_filename), depth)
+            self.log("Writing record filename for {}".format(record.path), depth)
             record.header['filename_offset'] = self.int32_bytes(self.file.tell())
             self.write(record.filename.encode("shift_jis"), b"\x00")
 
@@ -88,13 +88,13 @@ class BND3File(BinaryFile):
 
         for record in manifest.records:
             cur_position = self.file.tell()
-            self.log("Writing record data for {}".format(record.actual_filename), depth)
+            self.log("Writing record data for {}".format(record.path), depth)
             record.header['data_offset'] = self.int32_bytes(cur_position)
 
             if hasattr(record, 'sub_manifest'):
-                self.write(record.sub_manifest.get_data(record.actual_filename, depth + 1))
+                self.write(record.sub_manifest.get_data(record.path, depth + 1))
             else:
-                self.write(open(record.actual_filename, "rb").read())
+                self.write(open(record.path, "rb").read())
 
             data_size = self.file.tell() - cur_position
             record.header['data_size'] = self.int32_bytes(data_size)
@@ -109,5 +109,5 @@ class BND3File(BinaryFile):
         self.write_header(manifest)
 
         for record in manifest.records:
-            self.log("Writing record header for {}".format(record.actual_filename), depth)
+            self.log("Writing record header for {}".format(record.path), depth)
             self.write_header(record)

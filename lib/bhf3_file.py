@@ -1,4 +1,4 @@
-from .binary_file import BinaryFile
+from .binary_file import BinaryFile, Manifest
 
 
 class BHF3File(BinaryFile):
@@ -7,7 +7,7 @@ class BHF3File(BinaryFile):
     def extract_file(self, depth):
         self.log("Parsing file {}".format(self.path), depth)
 
-        manifest = self.manifest(header=[
+        manifest = Manifest(self, header=[
             ("signature", self.consume(self.MAGIC_HEADER)),
             ("id", self.consume(b"07D7R6\x00\x00")),
             ("version", self.read(4)),
@@ -16,7 +16,6 @@ class BHF3File(BinaryFile):
             ("padding", self.consume(0x0, 8)),
         ])
         manifest.records = []
-        manifest.actual_header_filename = self.path
 
         if manifest.int32('version') not in (0x74, 0x54):
             raise ValueError("Invalid version: {:02X}".format(manifest.int32('version')))
@@ -28,7 +27,7 @@ class BHF3File(BinaryFile):
         return manifest
 
     def _read_record(self, depth):
-        record = self.manifest(header=[
+        record = Manifest(self, header=[
             ("record_separator", self.consume(0x40, 4)),
             ('record_size', self.read(4)),
             ('record_offset', self.read(4)),
@@ -46,7 +45,7 @@ class BHF3File(BinaryFile):
         record.record_name = self.read_null_terminated_string()
         if not record.record_name:
             raise ValueError("Got empty record name")
-        record.actual_filename = self.normalize_filepath(record.record_name)
+        record.path = self.normalize_filepath(record.record_name)
 
         self.file.seek(position)
         return record

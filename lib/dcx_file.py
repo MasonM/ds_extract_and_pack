@@ -2,7 +2,7 @@ import os
 import io
 import zlib
 
-from .binary_file import BinaryFile
+from .binary_file import BinaryFile, Manifest
 from . import utils
 
 
@@ -16,7 +16,7 @@ class DCXFile(BinaryFile):
     def extract_file(self, depth):
         self.log("Reading file {}".format(self.path), depth)
 
-        manifest = self.manifest(header=[
+        manifest = Manifest(self, header=[
             ("signature", self.consume(self.MAGIC_HEADER)),
             ("unknown1", self.consume(0x10000, 4)),
             ("dcs_offset", self.consume(0x18, 4)),
