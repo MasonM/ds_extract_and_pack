@@ -1,5 +1,4 @@
 import os
-from _collections import OrderedDict
 
 from .binary_file import BinaryFile
 from . import utils
@@ -11,79 +10,76 @@ class TPFFile(BinaryFile):
     def extract_file(self, depth):
         self.log("Reading file {}".format(self.path), depth)
 
-        manifest = {
-            'header': OrderedDict([
-                ('signature', self.consume(self.MAGIC_HEADER)),
-                ("size_sum", self.read(4)),
-                ("entry_count", self.read(4)),
-                ("flags", self.consume(0x20300, 4)),
-            ]),
-            'entries': [],
-        }
+        manifest = self.manifest(header=[
+            ('signature', self.consume(self.MAGIC_HEADER)),
+            ("size_sum", self.read(4)),
+            ("record_count", self.read(4)),
+            ("flags", self.consume(0x20300, 4)),
+        ])
+        manifest.records = []
 
-        for i in range(self.to_int32(manifest['header']['entry_count'])):
-            self.log("Reading entry #{}".format(i), depth)
-            manifest['entries'].append(self._read_entry(depth + 1))
+        for i in range(manifest.int32('record_count')):
+            self.log("Reading record #{}".format(i), depth)
+            manifest.records.append(self._read_record(depth + 1))
 
-        manifest["end_header_pos"] = self.file.tell()
+        manifest.end_header_pos = self.file.tell()
 
         return manifest
 
-    def _read_entry(self, depth):
-        entry = {
-            'header': OrderedDict([
-                ('data_offset', self.read(4)),
-                ('data_size', self.read(4)),
-                ('id', self.read(4)),
-                ('filename_offset', self.read(4)),
-                ('padding', self.consume(0x0, 4)),
-            ]),
-        }
+    def _read_record(self, depth):
+        record = self.manifest(header=[
+            ('data_offset', self.read(4)),
+            ('data_size', self.read(4)),
+            ('id', self.read(4)),
+            ('filename_offset', self.read(4)),
+            ('padding', self.consume(0x0, 4)),
+        ])
 
         position = self.file.tell()
-        filename_offset = self.to_int32(entry['header']['filename_offset'])
-        if filename_offset > 0:
-            self.file.seek(filename_offset)
-            entry['filename'] = self.read_null_terminated_string()
+        if record.int32('filename_offset') > 0:
+            self.file.seek(record.int32('filename_offset'))
+            record.filename = self.read_null_terminated_string()
 
-        data_offset = self.to_int32(entry['header']['data_offset'])
-        data_size = self.to_int32(entry['header']['data_size'])
-        if data_offset > 0:
-            entry['actual_filename'] = self.normalize_filepath(entry['filename']) + ".dds"
-            self.file.seek(data_offset)
-            self.log("Reading data, size = {}, filename = {}, actual filename = {}".format(data_size, entry['filename'], entry['actual_filename']), depth)
-            data = self.read(data_size)
-            utils.write_data(entry['actual_filename'], data)
+        if record.int32('data_offset') > 0:
+            record.actual_filename = self.normalize_filepath(record.filename) + ".dds"
+            self.file.seek(record.int32('data_offset'))
+            self.log("Reading data, size = {}, filename = {}, actual filename = {}".format(
+                record.int32('data_size'),
+                record.filename,
+                record.actual_filename
+            ), depth)
+            data = self.read(record.int32('data_size'))
+            utils.write_data(record.actual_filename, data)
 
         self.file.seek(position)
 
-        return entry
+        return record
 
     def create_file(self, manifest, depth):
         self.log("Writing file {}".format(self.path), depth)
 
-        self.file.seek(manifest['end_header_pos'])
+        self.file.seek(manifest.end_header_pos)
 
-        for entry in manifest['entries']:
-            self.log("Writing entry filename for {}".format(entry['actual_filename']), depth)
-            entry['header']['filename_offset'] = self.int32_bytes(self.file.tell())
-            self.write(entry['filename'].encode("shift_jis"), b"\x00")
+        for record in manifest.records:
+            self.log("Writing record filename for {}".format(record.actual_filename), depth)
+            record.header['filename_offset'] = self.int32_bytes(self.file.tell())
+            self.write(record.filename.encode("shift_jis"), b"\x00")
 
-        padding = (16 * len(manifest['entries']))
+        padding = (16 * len(manifest.records))
         self.write(b"\x00" * padding)
 
         size_sum = 0
-        for entry in manifest['entries']:
-            self.log("Writing entry data for {}".format(entry['actual_filename']), depth)
-            entry['header']['data_size'] = self.int32_bytes(os.path.getsize(entry['actual_filename']))
-            size_sum += self.to_int32(entry['header']['data_size'])
-            entry['header']['data_offset'] = self.int32_bytes(self.file.tell())
-            self.write(open(entry['actual_filename'], 'rb').read())
+        for record in manifest.records:
+            self.log("Writing record data for {}".format(record.actual_filename), depth)
+            record.header['data_size'] = self.int32_bytes(os.path.getsize(record.actual_filename))
+            size_sum += record.int32('data_size')
+            record.header['data_offset'] = self.int32_bytes(self.file.tell())
+            self.write(open(record.actual_filename, 'rb').read())
 
         self.file.seek(0)
-        manifest['header']['size_sum'] = self.int32_bytes(size_sum)
+        manifest.header['size_sum'] = self.int32_bytes(size_sum)
         self.write_header(manifest)
 
-        for entry in manifest['entries']:
-            self.log("Writing entry header for {}".format(entry['actual_filename']), depth)
-            self.write_header(entry)
+        for record in manifest.records:
+            self.log("Writing record header for {}".format(record.actual_filename), depth)
+            self.write_header(record)

@@ -2,7 +2,6 @@ import os
 import shutil
 import pickle
 import filecmp
-import sys
 
 from lib.bdt_file import BDTFile
 from lib.bhd5_file import BHD5File
@@ -43,16 +42,17 @@ def do_read_write_test(filename, cls):
     in_filename = os.path.join("..", "test_files", filename)
     out_filename = os.path.join(output_base_dir, filename)
     manifest_filename = os.path.join(output_base_dir, "manifest")
+    #manifest = pickle.load(open(manifest_filename, "rb"))
 
     manifest = do_read_test(in_filename, cls)
-    pickle.dump(manifest, open(manifest_filename, "wb"))
+    pickle.dump(manifest, open(manifest_filename, "wb"), protocol=4)
 
     do_write_test(out_filename, manifest, cls)
 
-    if "header_file_cls" in manifest:
-        header_filepath = os.path.join(output_base_dir, os.path.basename(manifest["actual_header_filename"]))
+    if hasattr(manifest, "header_file_cls"):
+        header_filepath = os.path.join(output_base_dir, os.path.basename(manifest.actual_header_filename))
         file = open(header_filepath, "wb")
-        manifest["header_file_cls"](file, header_filepath).create_file(manifest, 1)
+        manifest.header_file_cls(file, header_filepath).create_file(manifest, 1)
         file.close()
 
     dir_prep(second_extract_base_dir)
@@ -72,6 +72,7 @@ bnd3_file = "o1470.objbnd."
 #bnd3_file = "c5200.anibnd."
 #dcx_file = bnd3_file
 dcx_file = "m18_00_00_00.emeld."
+#dcx_file="menu.drb."
 #bdt_file = "m10_0000.tpf"
 #bdt_file = "m16_0002.tpf"
 #bdt_file = "good_c4100.chrtpf"

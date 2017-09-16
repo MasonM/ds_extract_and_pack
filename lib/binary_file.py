@@ -1,5 +1,7 @@
 import os
 import re
+import io
+from _collections import OrderedDict
 
 
 class BinaryFile:
@@ -9,12 +11,15 @@ class BinaryFile:
         self.endian = "little"
         self.base_dir = base_dir or os.path.dirname(path)
 
+    def manifest(self, header):
+        return Manifest(self.__class__, self.endian, header)
+
     def write(self, *args):
         for arg in args:
             self.file.write(arg)
 
     def write_header(self, manifest):
-        self.write(*manifest['header'].values())
+        self.write(*manifest.header.values())
 
     def read(self, num_bytes):
         return self.file.read(num_bytes)
@@ -65,9 +70,6 @@ class BinaryFile:
     def int32_bytes(self, i):
         return i.to_bytes(4, byteorder=self.endian)
 
-    def to_int32(self, b):
-        return int.from_bytes(b, byteorder=self.endian, signed=False)
-
     def log(self, msg, depth):
         prefix = ""
         if depth > 1:
@@ -75,3 +77,22 @@ class BinaryFile:
         prefix += self.__class__.__name__.replace("File", "")
         prefix += "(offset=" + str(self.file.tell()) + "): "
         print(prefix + msg)
+
+
+class Manifest:
+    def __init__(self, file_cls, endian, header):
+        self.file_cls = file_cls
+        self.header = OrderedDict(header)
+        self.endian = endian
+
+    def int32(self, key):
+        if key not in self.header:
+            raise IndexError
+
+        return int.from_bytes(self.header[key], byteorder=self.endian, signed=False)
+
+    def get_data(self, filename, depth):
+        with io.BytesIO() as buffer:
+            self.file_cls(buffer, filename).create_file(self, depth)
+            buffer.seek(0)
+            return buffer.read()

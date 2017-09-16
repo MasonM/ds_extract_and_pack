@@ -1,4 +1,3 @@
-import io
 import os
 import hashlib
 
@@ -12,24 +11,6 @@ def class_for_data(data):
         if data.startswith(file_cls.MAGIC_HEADER):
             return file_cls
     return None
-
-
-def get_data_for_file(sub_manifest, filename, depth):
-    file_cls = class_for_data(sub_manifest['header']['signature'])
-    if not file_cls:
-        raise RuntimeError("Failed to find file class to parse file {} with signature {}".format(
-            filename,
-            sub_manifest['header']['signature'])
-        )
-
-    return get_data_for_file_cls(file_cls, sub_manifest, filename, depth)
-
-
-def get_data_for_file_cls(file_cls, sub_manifest, filename, depth):
-    with io.BytesIO() as buffer:
-        file_cls(buffer, filename).create_file(sub_manifest, depth)
-        buffer.seek(0)
-        return buffer.read()
 
 
 def write_data(filepath, data):
