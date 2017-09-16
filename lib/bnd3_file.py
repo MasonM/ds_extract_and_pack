@@ -82,9 +82,7 @@ class BND3File(BinaryFile):
 
         manifest.header['header_size'] = self.int32_bytes(self.file.tell())
 
-        if self.file.tell() % 16 > 0:
-            padding = 16 - (self.file.tell() % 16)
-            self.write(b"\x00" * padding)
+        self.pad_to_hex_boundary()
 
         for record in manifest.records:
             cur_position = self.file.tell()
@@ -102,8 +100,7 @@ class BND3File(BinaryFile):
                 record.header['redundant_size'] = record.header['data_size']
 
             if record != manifest.records[-1]:
-                if data_size % 16 > 0:
-                    self.write(b"\x00" *  (16 - (data_size % 16))) # padding
+                self.pad_to_hex_boundary()
 
         self.file.seek(0)
         self.write_header(manifest)

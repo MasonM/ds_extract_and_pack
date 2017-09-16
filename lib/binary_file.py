@@ -46,6 +46,11 @@ class BinaryFile:
             self.log("Failed to decode {}".format(buffer), 1)
             raise e
 
+    def pad_to_hex_boundary(self):
+        if self.file.tell() % 16 > 0:
+            padding = 16 - (self.file.tell() % 16)
+            self.write(b"\x00" * padding)
+
     def normalize_filepath(self, path):
         if path.lower().startswith("n:\\"):
             path = path[3:]

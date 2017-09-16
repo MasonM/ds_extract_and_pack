@@ -117,6 +117,4 @@ class BDTFile(BinaryFile):
             if 'redundant_size' in record.header:
                 record.header['redundant_size'] = record.header['record_size']
             if record != records[-1][1]:
-                if self.file.tell() % 16 > 0:
-                    padding = 16 - (self.file.tell() % 16)
-                    self.write(b"\x00" * padding)
+                self.pad_to_hex_boundary()
