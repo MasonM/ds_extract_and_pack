@@ -43,7 +43,7 @@ class BDTFile(BinaryFile):
     def _get_header_filename(self, depth):
         path = self.path.rsplit("bdt", 1)[0] + "bhd"
         if depth == 1:
-            path += "5"
+            return path + "5"
 
         if not utils.isfile(path):
             basename, ext = os.path.basename(path).rsplit('.', 1)

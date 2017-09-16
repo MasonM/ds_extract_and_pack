@@ -54,6 +54,7 @@ def do_read_write_test(filename, cls):
         header_filepath = os.path.join(output_base_dir, os.path.basename(manifest.path))
         open(header_filepath, "wb").write(manifest.get_data(header_filepath, 1))
 
+    return
     dir_prep(second_extract_base_dir)
     cls(open(out_filename, "rb"), out_filename, second_extract_base_dir).extract_file(depth=1)
 
@@ -75,7 +76,7 @@ dcx_file = "m18_00_00_00.emeld."
 #bdt_file = "m10_0000.tpf"
 #bdt_file = "m16_0002.tpf"
 #bdt_file = "good_c4100.chrtpf"
-bdt_file = "dvdbnd2."
+bdt_file = "dvdbnd1."
 
 test = "bdt"
 
