@@ -13,6 +13,10 @@ def class_for_data(data):
     return None
 
 
+def read_data(filepath):
+    return open(filepath, "rb").read()
+
+
 def write_data(filepath, data):
     os.makedirs(os.path.dirname(filepath), exist_ok=True)
     if os.path.isfile(filepath):

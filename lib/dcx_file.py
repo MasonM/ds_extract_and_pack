@@ -66,7 +66,7 @@ class DCXFile(BinaryFile):
         if hasattr(manifest, 'sub_manifest'):
             uncompressed_data = manifest.sub_manifest.get_data(manifest.uncompressed_filename, depth + 1)
         else:
-            uncompressed_data = open(manifest.uncompressed_filename, "rb").read()
+            uncompressed_data = utils.read_data(manifest.uncompressed_filename)
 
         manifest.header['uncompressed_size'] = self.int32_bytes(len(uncompressed_data))
 

@@ -74,7 +74,7 @@ class TPFFile(BinaryFile):
             record.header['data_size'] = self.int32_bytes(os.path.getsize(record.path))
             size_sum += record.int32('data_size')
             record.header['data_offset'] = self.int32_bytes(self.file.tell())
-            self.write(open(record.path, 'rb').read())
+            self.write(utils.read_data(record.path))
 
         self.file.seek(0)
         manifest.header['size_sum'] = self.int32_bytes(size_sum)

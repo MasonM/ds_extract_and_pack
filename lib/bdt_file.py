@@ -29,18 +29,16 @@ class BDTFile(BinaryFile):
         return manifest
 
     def _get_header_extractor(self, header_filename):
-        header_file = open(header_filename, "rb")
-        signature = header_file.read(4)
-        header_file.seek(0)
+        header_data = utils.read_data(header_filename)
 
-        if signature == BHF3File.MAGIC_HEADER:
+        if header_data.startswith(BHF3File.MAGIC_HEADER):
             file_cls = BHF3File
-        elif signature == BHD5File.MAGIC_HEADER:
+        elif header_data.startswith(BHD5File.MAGIC_HEADER):
             file_cls = BHD5File
         else:
             raise RuntimeError("Invalid signature in header file: {}".format(header_filename))
 
-        return file_cls(header_file, header_filename, self.base_dir)
+        return file_cls(io.BytesIO(header_data), header_filename, self.base_dir)
 
     def _get_header_filename(self):
         path_without_bdt = self.path.rsplit("bdt", 1)[0]
@@ -113,7 +111,7 @@ class BDTFile(BinaryFile):
             elif hasattr(record, 'sub_manifest') and not record.path.endswith("c4110.chrtpfbdt"):
                 self.write(record.sub_manifest.get_data(record.path, depth + 1))
             else:
-                self.write(open(record.path, "rb").read())
+                self.write(utils.read_data(record.path))
             data_size = self.file.tell() - cur_position
             record.header['record_size'] = self.int32_bytes(data_size)
             if 'redundant_size' in record.header:
