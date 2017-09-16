@@ -97,11 +97,7 @@ class BDTFile(BinaryFile):
                 record.path
             ), depth)
 
-            bdt_data[record.path] =  record.sub_manifest.get_data(record.path, depth + 1)
-
-            record.sub_manifest\
-                .file_cls(open(record.sub_manifest.path, "wb"), record.sub_manifest.path)\
-                .create_file(record.sub_manifest, depth + 1)
+            bdt_data[record.path] = record.sub_manifest.get_data(record.path, depth + 1)
 
         for record_num, record in records:
             self.log("Writing data for record num {}, name {}, actual name = {}".format(

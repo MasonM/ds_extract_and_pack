@@ -58,5 +58,5 @@ class BHF3File(BinaryFile):
             self.write_header(record)
             current_position = self.file.tell()
             self.file.seek(record.int32('filename_offset'))
-            self.write(record['record_name'].encode("shift_jis"), b"\x00")
+            self.write(record.record_name.encode("shift_jis"), b"\x00")
             self.file.seek(current_position)

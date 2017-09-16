@@ -3,6 +3,8 @@ import re
 import io
 from _collections import OrderedDict
 
+from . import dupe_files
+
 
 class BinaryFile:
     def __init__(self, file, path, base_dir=None):
@@ -50,9 +52,8 @@ class BinaryFile:
 
         path = path.lstrip("\\").replace("\\", "/")
 
-        # Hack to fix menu TPFs that have duplicate files
-        if os.path.basename(os.path.dirname(self.path)) == "menu":
-            path = os.path.join(os.path.basename(self.path).rsplit('.')[0], path)
+        if path in dupe_files.DUPE_FILES:
+            path = dupe_files.fix_dupe_path(path)
 
         path = os.path.join(self.base_dir, path)
 

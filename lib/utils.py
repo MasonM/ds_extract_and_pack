@@ -24,7 +24,4 @@ def write_data(filepath, data):
         # This seems to only happen with *.sibcam and *.hkx files
         print("ERROR: File already exists and has different hash: {}".format(filepath))
 
-    file = open(filepath, 'w+b')
-    file.write(data)
-    file.seek(0)
-    return file
+    open(filepath, 'wb').write(data)

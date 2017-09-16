@@ -75,7 +75,7 @@ dcx_file = "m18_00_00_00.emeld."
 #bdt_file = "m10_0000.tpf"
 #bdt_file = "m16_0002.tpf"
 #bdt_file = "good_c4100.chrtpf"
-bdt_file = "dvdbnd2."
+bdt_file = "dvdbnd3."
 
 test = "bdt"
 
