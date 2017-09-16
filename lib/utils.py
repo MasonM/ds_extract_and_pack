@@ -16,12 +16,15 @@ def class_for_data(data):
 def write_data(filepath, data):
     os.makedirs(os.path.dirname(filepath), exist_ok=True)
     if os.path.isfile(filepath):
+        # Must be identical file, because dupes_files.py contains a list of everything that differs
+        return
+        """
         self_digest = hashlib.md5(data).hexdigest()
         other_digest = hashlib.md5(open(filepath, "rb").read()).hexdigest()
         if self_digest == other_digest:
             print("WARN: File already exists and has same hash: {}".format(filepath))
             return
-        # This seems to only happen with *.sibcam and *.hkx files
         print("ERROR: File already exists and has different hash: {}".format(filepath))
+        """
 
     open(filepath, 'wb').write(data)
