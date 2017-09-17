@@ -9,6 +9,7 @@ from lib.bhd5_file import BHD5File
 from lib.bnd3_file import BND3File
 from lib.tpf_file import TPFFile
 from lib.dcx_file import DCXFile
+from lib import config
 
 
 extract_base_dir = os.path.abspath("test")
@@ -29,13 +30,16 @@ def dir_prep(base_dir):
 
 def do_read_test(filename, cls):
     dir_prep(extract_base_dir)
-    manifest = cls(open(filename, "rb"), filename, extract_base_dir).extract_file(depth=1)
+    config.base_dir = extract_base_dir
+    filename = os.path.abspath(filename)
+    manifest = cls(open(filename, "rb"), filename).extract_file(depth=1)
     #pprint(manifest)
     return manifest
 
 
 def do_write_test(filename, manifest, cls):
     # dir_prep(output_base_dir)
+    filename = os.path.abspath(filename)
     cls(open(filename, "wb"), filename).create_file(manifest, depth=1)
 
 
@@ -54,9 +58,9 @@ def do_read_write_test(filename, cls):
         header_filepath = os.path.join(output_base_dir, os.path.basename(manifest.path))
         open(header_filepath, "wb").write(manifest.get_data(header_filepath, 1))
 
-    return
     dir_prep(second_extract_base_dir)
-    cls(open(out_filename, "rb"), out_filename, second_extract_base_dir).extract_file(depth=1)
+    config.base_dir = second_extract_base_dir
+    cls(open(out_filename, "rb"), out_filename).extract_file(depth=1)
 
     if filecmp.cmp(in_filename, out_filename):
         print("Files identical")
@@ -76,7 +80,7 @@ dcx_file = "m18_00_00_00.emeld."
 #bdt_file = "m10_0000.tpf"
 #bdt_file = "m16_0002.tpf"
 #bdt_file = "good_c4100.chrtpf"
-bdt_file = "dvdbnd1."
+bdt_file = "dvdbnd3."
 
 test = "bdt"
 

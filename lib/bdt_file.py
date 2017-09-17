@@ -18,7 +18,7 @@ class BDTFile(BinaryFile):
 
         if self.path.endswith("c4110.chrtpfbdt"):
             data = io.BytesIO(c4110_replacement.DATA)
-            manifest = BHF3File(data, self.path[:-3] + "bhd", self.base_dir).extract_file(depth + 1)
+            manifest = BHF3File(data, self.path[:-3] + "bhd").extract_file(depth + 1)
         else:
             header_filename = self._get_header_filename(depth)
             self.log("Using header file {}".format(header_filename), depth)
@@ -28,7 +28,8 @@ class BDTFile(BinaryFile):
 
         return manifest
 
-    def _get_header_extractor(self, header_filename):
+    @staticmethod
+    def _get_header_extractor(header_filename):
         header_data = utils.read_data(header_filename)
 
         if header_data.startswith(BHF3File.MAGIC_HEADER):
@@ -38,7 +39,7 @@ class BDTFile(BinaryFile):
         else:
             raise RuntimeError("Invalid signature in header file: {}".format(header_filename))
 
-        return file_cls(io.BytesIO(header_data), header_filename, self.base_dir)
+        return file_cls(io.BytesIO(header_data), header_filename)
 
     def _get_header_filename(self, depth):
         path = self.path.rsplit("bdt", 1)[0] + "bhd"

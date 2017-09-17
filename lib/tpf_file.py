@@ -39,7 +39,7 @@ class TPFFile(BinaryFile):
             record.filename = self.read_null_terminated_string()
 
         if record.int32('data_offset') > 0:
-            record.path = self.normalize_filepath(record.filename) + ".dds"
+            record.path = utils.normalize_filepath(record.filename) + ".dds"
             self.file.seek(record.int32('data_offset'))
             self.log("Reading data, size = {}, filename = {}, actual filename = {}".format(
                 record.int32('data_size'),

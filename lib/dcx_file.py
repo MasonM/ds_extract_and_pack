@@ -9,8 +9,8 @@ from . import utils
 class DCXFile(BinaryFile):
     MAGIC_HEADER = b"DCX\x00"
 
-    def __init__(self, file, path, base_dir=None):
-        super().__init__(file, path, base_dir)
+    def __init__(self, file, path):
+        super().__init__(file, path)
         self.endian = "big"
 
     def extract_file(self, depth):
@@ -46,7 +46,7 @@ class DCXFile(BinaryFile):
             )
             raise ValueError(msg)
 
-        uncompressed_filename = self.normalize_filepath(os.path.basename(self.path)[:-4])
+        uncompressed_filename = utils.normalize_filepath(os.path.basename(self.path)[:-4])
         manifest.uncompressed_filename = uncompressed_filename
 
         file_cls = utils.class_for_data(uncompressed_data)

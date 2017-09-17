@@ -2,6 +2,7 @@ import os
 
 from .binary_file import BinaryFile, Manifest
 from .name_hash_handler import get_name_from_hash
+from . import utils
 
 
 class BHD5File(BinaryFile):
@@ -62,7 +63,7 @@ class BHD5File(BinaryFile):
         except KeyError:
             raise ValueError("Failed to find {} in name hash dict".format(record_hash))
 
-        filepath = self.normalize_filepath(record.record_name)
+        filepath = utils.normalize_filepath(record.record_name)
         record.path = filepath
 
         return record
