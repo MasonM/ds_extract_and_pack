@@ -7,7 +7,7 @@ from . import dupe_files, config
 filesystem = {}
 
 
-def normalize_filepath(path):
+def normalize_filepath(path, base_path):
     if path.lower().startswith("n:\\"):
         path = path[3:]
 
@@ -15,6 +15,8 @@ def normalize_filepath(path):
 
     if path in dupe_files.DUPE_FILES:
         path = dupe_files.fix_dupe_path(path)
+
+    path = os.path.join(os.path.dirname(base_path), path)
 
     # Flatten directory structure
     path = re.sub(r"((?:[^/]+/)+)FRPG/data/(Model|INTERROOT_win32)/(?:param/)?\1", r"\1", path)

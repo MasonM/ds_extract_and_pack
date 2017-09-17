@@ -52,7 +52,7 @@ class BND3File(BinaryFile):
         if record.int32('filename_offset') > 0:
             self.file.seek(record.int32('filename_offset'))
             record.filename = self.read_null_terminated_string()
-            record.path = filesystem.normalize_filepath(record.filename)
+            record.path = filesystem.normalize_filepath(record.filename, self.path)
             # self.log("got filename %s" % record['filename'])
 
         if record.int32('data_offset') > 0:

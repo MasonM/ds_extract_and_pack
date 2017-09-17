@@ -62,7 +62,7 @@ class BHD5File(BinaryFile):
         except KeyError:
             raise ValueError("Failed to find {} in name hash dict".format(record_hash))
 
-        filepath = filesystem.normalize_filepath(record.record_name)
+        filepath = filesystem.normalize_filepath(record.record_name, self.path)
         record.path = filepath
 
         return record

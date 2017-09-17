@@ -46,7 +46,7 @@ class DCXFile(BinaryFile):
             )
             raise ValueError(msg)
 
-        uncompressed_filename = filesystem.normalize_filepath(os.path.basename(self.path)[:-4])
+        uncompressed_filename = filesystem.normalize_filepath(os.path.basename(self.path)[:-4], self.path)
         manifest.uncompressed_filename = uncompressed_filename
 
         file_cls = utils.class_for_data(uncompressed_data)
