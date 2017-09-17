@@ -6131,22 +6131,3 @@ FILENAMES = [
     "/sound/frpg_xm18.fsb",
     "/sound/frpg_xm18.itl"
 ]
-
-
-def get_hash_from_string(s):
-    hash_val = 0
-    for char in s.lower():
-        hash_val *= 37
-        hash_val += ord(char)
-    hash_val &= 0xffffffff # truncate to 32 bits
-    return hash_val
-
-
-name_hash_dict = {}
-
-
-def get_name_from_hash(hash):
-    if not name_hash_dict:
-        for name in FILENAMES:
-            name_hash_dict[get_hash_from_string(name)] = name
-    return name_hash_dict[hash]

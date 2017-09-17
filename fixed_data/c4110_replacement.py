@@ -1,9 +1,9 @@
 # Copied from https://github.com/HotPocketRemix/UnpackDarkSoulsForModding/blob/9d5b2919c9d3ba7df054e54860594b9f75be4d94/c4110_replacement.py
 # Written by https://github.com/HotPocketRemix
 
-# This file contains custom data for c4110.chrtpfbhd, a header file
+# This file contains custom fixed_data for c4110.chrtpfbhd, a header file
 #  that was not included in the archived files (the file it unpacks is
-#  not used in-game). This data is a reconstructed version of the file.
+#  not used in-game). This fixed_data is a reconstructed version of the file.
 # The real version of this file would have almost certainly been included
 #  in dvdroot:/chr/c4110.chrbnd
 

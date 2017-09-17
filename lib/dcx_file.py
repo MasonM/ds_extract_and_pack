@@ -52,7 +52,7 @@ class DCXFile(lib.BinaryFile):
         if file_cls:
             manifest.sub_manifest = file_cls(io.BytesIO(uncompressed_data), uncompressed_filename).extract_file(depth + 1)
         else:
-            self.log("Writing data to {}".format(uncompressed_filename), depth)
+            self.log("Writing fixed_data to {}".format(uncompressed_filename), depth)
             lib.filesystem.write_data(uncompressed_filename, uncompressed_data)
 
         return manifest

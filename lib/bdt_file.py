@@ -1,8 +1,8 @@
 import io
 import os
 
+import fixed_data.c4110_replacement
 import lib
-import lib.c4110_replacement
 
 
 class BDTFile(lib.BinaryFile):
@@ -15,7 +15,7 @@ class BDTFile(lib.BinaryFile):
         self.consume(0x0, 6)
 
         if self.path.endswith("c4110.chrtpfbdt"):
-            data = io.BytesIO(lib.c4110_replacement.DATA)
+            data = io.BytesIO(fixed_data.c4110_replacement.DATA)
             manifest = lib.BHF3File(data, self.path[:-3] + "bhd").extract_file(depth + 1)
         else:
             header_filename = self._get_header_filename(depth)

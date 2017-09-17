@@ -46,8 +46,8 @@ DUPE_FILES = [
     'cut0140/hkxwin32/a0140.hkx',
     'cut0200/camera_win32.sibcam',
     'cut0200/hkxwin32/a0200.hkx',
-    'FRPG/data/Model/chr/c0000/hkxwin32/a00/a00_9000.hkx',
-    'FRPG/data/Model/chr/c0000/hkxwin32/a00/a00_9420.hkx',
+    'FRPG/fixed_data/Model/chr/c0000/hkxwin32/a00/a00_9000.hkx',
+    'FRPG/fixed_data/Model/chr/c0000/hkxwin32/a00/a00_9420.hkx',
     'Icon00',
     'Icon01',
     'Icon10',
@@ -99,15 +99,3 @@ DUPE_FILES = [
     'Title',
 ]
 
-dupe_counter = {}
-
-
-def fix_dupe_path(path):
-    count = dupe_counter.get(path, 0) + 1
-    dupe_counter[path] = count
-    suffix = "_%d" % count
-    if '.' in path:
-        head, sep, tail = path.rpartition('.')
-        return head + suffix + sep + tail
-    else:
-        return path + suffix

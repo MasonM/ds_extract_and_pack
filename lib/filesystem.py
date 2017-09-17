@@ -3,9 +3,40 @@ import os
 import re
 
 import config
-import lib.dupe_files
+import fixed_data.dupe_files
+import fixed_data.filenames
+import fixed_data.c4110_replacement
 
 filesystem = {}
+dupe_counter = {}
+name_hash_cache = {}
+
+
+def get_hash_from_string(s):
+    hash_val = 0
+    for char in s.lower():
+        hash_val *= 37
+        hash_val += ord(char)
+    hash_val &= 0xffffffff # truncate to 32 bits
+    return hash_val
+
+
+def get_name_from_hash(file_hash):
+    if not name_hash_cache:
+        for name in fixed_data.filenames.FILENAMES:
+            name_hash_cache[get_hash_from_string(name)] = name
+    return name_hash_cache[file_hash]
+
+
+def fix_dupe_path(path):
+    count = dupe_counter.get(path, 0) + 1
+    dupe_counter[path] = count
+    suffix = "_%d" % count
+    if '.' in path:
+        head, sep, tail = path.rpartition('.')
+        return head + suffix + sep + tail
+    else:
+        return path + suffix
 
 
 def normalize_filepath(path, base_path):
@@ -18,8 +49,8 @@ def normalize_filepath(path, base_path):
 
     path = path.lstrip("\\").replace("\\", "/")
 
-    if path in lib.dupe_files.DUPE_FILES:
-        path = lib.dupe_files.fix_dupe_path(path)
+    if path in fixed_data.dupe_files.DUPE_FILES:
+        path = fix_dupe_path(path)
 
     path = os.path.join(os.path.dirname(base_path), path)
 

@@ -1,7 +1,6 @@
 import os
 
 import lib
-import lib.name_hash_handler
 
 
 class BHD5File(lib.BinaryFile):
@@ -58,7 +57,7 @@ class BHD5File(lib.BinaryFile):
 
         record_hash = record.int32('record_hash')
         try:
-            record.record_name = lib.name_hash_handler.get_name_from_hash(record_hash).lstrip("/").replace("/", os.sep)
+            record.record_name = lib.filesystem.get_name_from_hash(record_hash).lstrip("/").replace("/", os.sep)
         except KeyError:
             raise ValueError("Failed to find {} in name hash dict".format(record_hash))
 
