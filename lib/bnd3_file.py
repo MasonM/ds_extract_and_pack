@@ -58,7 +58,7 @@ class BND3File(lib.BinaryFile):
             self.file.seek(record.int32('data_offset'))
             self.log("Reading data, size = {}, filename = {}".format(record.int32('data_size'), record.filename), depth)
             data = self.read(record.int32('data_size'))
-            file_cls = lib.utils.class_for_data(data)
+            file_cls = self.class_for_data(data)
             if file_cls:
                 record.sub_manifest = file_cls(io.BytesIO(data), record.path).extract_file(depth + 1)
             else:

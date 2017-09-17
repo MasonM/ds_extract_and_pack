@@ -1,12 +1,23 @@
 import io
 from _collections import OrderedDict
 
+import lib
+
 
 class BinaryFile:
     def __init__(self, file, path):
         self.file = file
         self.path = path
         self.endian = "little"
+
+    @staticmethod
+    def class_for_data(data):
+        classes_to_check = [lib.BND3File, lib.TPFFile, lib.DCXFile, lib.BDTFile]
+
+        for file_cls in classes_to_check:
+            if data.startswith(file_cls.MAGIC_HEADER):
+                return file_cls
+        return None
 
     def write(self, *args):
         for arg in args:

@@ -48,7 +48,7 @@ class DCXFile(lib.BinaryFile):
         uncompressed_filename = lib.filesystem.normalize_filepath(os.path.basename(self.path)[:-4], self.path)
         manifest.uncompressed_filename = uncompressed_filename
 
-        file_cls = lib.utils.class_for_data(uncompressed_data)
+        file_cls = self.class_for_data(uncompressed_data)
         if file_cls:
             manifest.sub_manifest = file_cls(io.BytesIO(uncompressed_data), uncompressed_filename).extract_file(depth + 1)
         else:

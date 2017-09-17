@@ -60,7 +60,7 @@ class BDTFile(lib.BinaryFile):
             self.file.seek(record.int32('record_offset'))
             data = self.read(record.int32('record_size'))
 
-            file_cls = lib.utils.class_for_data(data)
+            file_cls = self.class_for_data(data)
             if file_cls is None or record.path.endswith("c4110.chrtpfbdt"):
                 self.log("Writing data for {} to {}".format(record.record_name, record.path), depth)
                 lib.filesystem.write_data(record.path, data)
