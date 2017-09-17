@@ -31,21 +31,21 @@ def read_data(file_path):
     if config.in_memory and not file_path.endswith("bhd5"):
         return filesystem[file_path]
     else:
-        return open(os.path.join(config.base_dir, file_path), "rb").read()
+        return open(os.path.join(config.extract_base_dir, file_path), "rb").read()
 
 
 def isfile(file_path):
     if config.in_memory:
         return file_path in filesystem
     else:
-        return os.path.isfile(os.path.join(config.base_dir, file_path))
+        return os.path.isfile(os.path.join(config.extract_base_dir, file_path))
 
 
 def write_data(file_path, data):
     if config.in_memory:
         filesystem[file_path] = data
     else:
-        file_path = os.path.join(config.base_dir, file_path)
+        file_path = os.path.join(config.extract_base_dir, file_path)
         os.makedirs(os.path.dirname(file_path), exist_ok=True)
         if os.path.isfile(file_path):
             if config.debug:

@@ -30,7 +30,7 @@ def dir_prep(base_dir):
 
 def do_read_test(filename, cls):
     dir_prep(extract_base_dir)
-    config.base_dir = extract_base_dir
+    config.extract_base_dir = extract_base_dir
     filename = os.path.abspath(filename)
     manifest = cls(open(filename, "rb"), filename).extract_file(depth=1)
     #pprint(manifest)
@@ -59,7 +59,7 @@ def do_read_write_test(filename, cls):
         open(header_filepath, "wb").write(manifest.get_data(header_filepath, 1))
 
     #dir_prep(second_extract_base_dir)
-    #config.base_dir = second_extract_base_dir
+    #config.extract_base_dir = second_extract_base_dir
     #cls(open(out_filename, "rb"), out_filename).extract_file(depth=1)
 
     if filecmp.cmp(in_filename, out_filename):
