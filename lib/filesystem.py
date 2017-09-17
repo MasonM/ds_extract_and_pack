@@ -1,13 +1,18 @@
+import hashlib
 import os
 import re
-import hashlib
 
-from . import dupe_files, config
+import config
+from . import dupe_files
 
 filesystem = {}
 
 
 def normalize_filepath(path, base_path):
+    if base_path.startswith(config.data_base_dir):
+        base_path = base_path[len(config.data_base_dir) + 1:]
+    base_path = base_path.lstrip(os.path.sep)
+
     if path.lower().startswith("n:\\"):
         path = path[3:]
 
@@ -28,6 +33,10 @@ def normalize_filepath(path, base_path):
 
 
 def read_data(file_path):
+    if config.override_dir:
+        override_file_path = os.path.join(config.override_dir, file_path)
+        if os.path.isfile(override_file_path):
+            return open(override_file_path, "rb").read()
     if config.in_memory and not file_path.endswith("bhd5"):
         return filesystem[file_path]
     else:
