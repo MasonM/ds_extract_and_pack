@@ -1,5 +1,5 @@
 from .binary_file import BinaryFile, Manifest
-from . import utils
+from . import filesystem
 
 
 class TPFFile(BinaryFile):
@@ -39,7 +39,7 @@ class TPFFile(BinaryFile):
             record.filename = self.read_null_terminated_string()
 
         if record.int32('data_offset') > 0:
-            record.path = utils.normalize_filepath(record.filename) + ".dds"
+            record.path = filesystem.normalize_filepath(record.filename) + ".dds"
             self.file.seek(record.int32('data_offset'))
             self.log("Reading data, size = {}, filename = {}, actual filename = {}".format(
                 record.int32('data_size'),
@@ -47,7 +47,7 @@ class TPFFile(BinaryFile):
                 record.path
             ), depth)
             data = self.read(record.int32('data_size'))
-            utils.write_data(record.path, data)
+            filesystem.write_data(record.path, data)
 
         self.file.seek(position)
 
@@ -69,7 +69,7 @@ class TPFFile(BinaryFile):
         size_sum = 0
         for record in manifest.records:
             self.log("Writing record data for {}".format(record.path), depth)
-            data = utils.read_data(record.path)
+            data = filesystem.read_data(record.path)
             record.header['data_size'] = self.int32_bytes(len(data))
             size_sum += record.int32('data_size')
             record.header['data_offset'] = self.int32_bytes(self.file.tell())

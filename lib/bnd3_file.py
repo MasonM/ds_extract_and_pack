@@ -1,7 +1,7 @@
 import io
 
 from .binary_file import BinaryFile, Manifest
-from . import utils
+from . import filesystem, utils
 
 
 class BND3File(BinaryFile):
@@ -52,7 +52,7 @@ class BND3File(BinaryFile):
         if record.int32('filename_offset') > 0:
             self.file.seek(record.int32('filename_offset'))
             record.filename = self.read_null_terminated_string()
-            record.path = utils.normalize_filepath(record.filename)
+            record.path = filesystem.normalize_filepath(record.filename)
             # self.log("got filename %s" % record['filename'])
 
         if record.int32('data_offset') > 0:
@@ -64,7 +64,7 @@ class BND3File(BinaryFile):
                 record.sub_manifest = file_cls(io.BytesIO(data), record.path).extract_file(depth + 1)
             else:
                 self.log("Writing data to {}".format(record.path), depth)
-                utils.write_data(record.path, data)
+                filesystem.write_data(record.path, data)
 
         self.file.seek(position)
 
@@ -92,7 +92,7 @@ class BND3File(BinaryFile):
             if hasattr(record, 'sub_manifest'):
                 self.write(record.sub_manifest.get_data(record.path, depth + 1))
             else:
-                self.write(utils.read_data(record.path))
+                self.write(filesystem.read_data(record.path))
 
             data_size = self.file.tell() - cur_position
             record.header['data_size'] = self.int32_bytes(data_size)

@@ -4,7 +4,7 @@ import os
 from .bhd5_file import BHD5File
 from .bhf3_file import BHF3File
 from .binary_file import BinaryFile
-from . import utils, c4110_replacement
+from . import utils, filesystem, c4110_replacement
 
 
 class BDTFile(BinaryFile):
@@ -30,7 +30,7 @@ class BDTFile(BinaryFile):
 
     @staticmethod
     def _get_header_extractor(header_filename):
-        header_data = utils.read_data(header_filename)
+        header_data = filesystem.read_data(header_filename)
 
         if header_data.startswith(BHF3File.MAGIC_HEADER):
             file_cls = BHF3File
@@ -46,11 +46,11 @@ class BDTFile(BinaryFile):
         if depth == 1:
             return path + "5"
 
-        if not utils.isfile(path):
+        if not filesystem.isfile(path):
             basename, ext = os.path.basename(path).rsplit('.', 1)
             path = os.sep.join([os.path.dirname(path), basename, basename + "." + ext])
 
-            if not utils.isfile(path):
+            if not filesystem.isfile(path):
                 raise FileNotFoundError("Got no results searching for BHD for BDT {}".format(self.path))
 
         return path
@@ -65,7 +65,7 @@ class BDTFile(BinaryFile):
             file_cls = utils.class_for_data(data)
             if file_cls is None or record.path.endswith("c4110.chrtpfbdt"):
                 self.log("Writing data for {} to {}".format(record.record_name, record.path), depth)
-                utils.write_data(record.path, data)
+                filesystem.write_data(record.path, data)
             elif file_cls == BDTFile:
                 # just store data for now, because we need to wait for the BHD to be extracted
                 record.bdt_data = io.BytesIO(data)
@@ -114,7 +114,7 @@ class BDTFile(BinaryFile):
             elif hasattr(record, 'sub_manifest') and not record.path.endswith("c4110.chrtpfbdt"):
                 self.write(record.sub_manifest.get_data(record.path, depth + 1))
             else:
-                self.write(utils.read_data(record.path))
+                self.write(filesystem.read_data(record.path))
             data_size = self.file.tell() - cur_position
             record.header['record_size'] = self.int32_bytes(data_size)
             if 'redundant_size' in record.header:

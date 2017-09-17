@@ -1,8 +1,7 @@
 import os
 
 from .binary_file import BinaryFile, Manifest
-from .name_hash_handler import get_name_from_hash
-from . import utils
+from . import name_hash_handler, filesystem
 
 
 class BHD5File(BinaryFile):
@@ -59,11 +58,11 @@ class BHD5File(BinaryFile):
 
         record_hash = record.int32('record_hash')
         try:
-            record.record_name = get_name_from_hash(record_hash).lstrip("/").replace("/", os.sep)
+            record.record_name = name_hash_handler.get_name_from_hash(record_hash).lstrip("/").replace("/", os.sep)
         except KeyError:
             raise ValueError("Failed to find {} in name hash dict".format(record_hash))
 
-        filepath = utils.normalize_filepath(record.record_name)
+        filepath = filesystem.normalize_filepath(record.record_name)
         record.path = filepath
 
         return record

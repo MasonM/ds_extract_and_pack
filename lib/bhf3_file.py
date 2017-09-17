@@ -1,5 +1,5 @@
 from .binary_file import BinaryFile, Manifest
-from . import utils
+from . import filesystem
 
 
 class BHF3File(BinaryFile):
@@ -46,7 +46,7 @@ class BHF3File(BinaryFile):
         record.record_name = self.read_null_terminated_string()
         if not record.record_name:
             raise ValueError("Got empty record name")
-        record.path = utils.normalize_filepath(record.record_name)
+        record.path = filesystem.normalize_filepath(record.record_name)
 
         self.file.seek(position)
         return record

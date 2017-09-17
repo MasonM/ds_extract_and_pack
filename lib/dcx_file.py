@@ -3,7 +3,7 @@ import io
 import zlib
 
 from .binary_file import BinaryFile, Manifest
-from . import utils
+from . import utils, filesystem
 
 
 class DCXFile(BinaryFile):
@@ -46,7 +46,7 @@ class DCXFile(BinaryFile):
             )
             raise ValueError(msg)
 
-        uncompressed_filename = utils.normalize_filepath(os.path.basename(self.path)[:-4])
+        uncompressed_filename = filesystem.normalize_filepath(os.path.basename(self.path)[:-4])
         manifest.uncompressed_filename = uncompressed_filename
 
         file_cls = utils.class_for_data(uncompressed_data)
@@ -54,7 +54,7 @@ class DCXFile(BinaryFile):
             manifest.sub_manifest = file_cls(io.BytesIO(uncompressed_data), uncompressed_filename).extract_file(depth + 1)
         else:
             self.log("Writing data to {}".format(uncompressed_filename), depth)
-            utils.write_data(uncompressed_filename, uncompressed_data)
+            filesystem.write_data(uncompressed_filename, uncompressed_data)
 
         return manifest
 
@@ -66,7 +66,7 @@ class DCXFile(BinaryFile):
         if hasattr(manifest, 'sub_manifest'):
             uncompressed_data = manifest.sub_manifest.get_data(manifest.uncompressed_filename, depth + 1)
         else:
-            uncompressed_data = utils.read_data(manifest.uncompressed_filename)
+            uncompressed_data = filesystem.read_data(manifest.uncompressed_filename)
 
         manifest.header['uncompressed_size'] = self.int32_bytes(len(uncompressed_data))
 
