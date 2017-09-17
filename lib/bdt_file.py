@@ -1,13 +1,11 @@
 import io
 import os
 
-from .bhd5_file import BHD5File
-from .bhf3_file import BHF3File
-from .binary_file import BinaryFile
-from . import utils, filesystem, c4110_replacement
+import lib
+import lib.c4110_replacement
 
 
-class BDTFile(BinaryFile):
+class BDTFile(lib.BinaryFile):
     MAGIC_HEADER = b"BDF307D7R6"
 
     def extract_file(self, depth):
@@ -17,8 +15,8 @@ class BDTFile(BinaryFile):
         self.consume(0x0, 6)
 
         if self.path.endswith("c4110.chrtpfbdt"):
-            data = io.BytesIO(c4110_replacement.DATA)
-            manifest = BHF3File(data, self.path[:-3] + "bhd").extract_file(depth + 1)
+            data = io.BytesIO(lib.c4110_replacement.DATA)
+            manifest = lib.BHF3File(data, self.path[:-3] + "bhd").extract_file(depth + 1)
         else:
             header_filename = self._get_header_filename(depth)
             self.log("Using header file {}".format(header_filename), depth)
@@ -30,12 +28,12 @@ class BDTFile(BinaryFile):
 
     @staticmethod
     def _get_header_extractor(header_filename):
-        header_data = filesystem.read_data(header_filename)
+        header_data = lib.filesystem.read_data(header_filename)
 
-        if header_data.startswith(BHF3File.MAGIC_HEADER):
-            file_cls = BHF3File
-        elif header_data.startswith(BHD5File.MAGIC_HEADER):
-            file_cls = BHD5File
+        if header_data.startswith(lib.BHF3File.MAGIC_HEADER):
+            file_cls = lib.BHF3File
+        elif header_data.startswith(lib.BHD5File.MAGIC_HEADER):
+            file_cls = lib.BHD5File
         else:
             raise RuntimeError("Invalid signature in header file: {}".format(header_filename))
 
@@ -46,11 +44,11 @@ class BDTFile(BinaryFile):
         if depth == 1:
             return path + "5"
 
-        if not filesystem.isfile(path):
+        if not lib.filesystem.isfile(path):
             basename, ext = os.path.basename(path).rsplit('.', 1)
             path = os.sep.join([os.path.dirname(path), basename, basename + "." + ext])
 
-            if not filesystem.isfile(path):
+            if not lib.filesystem.isfile(path):
                 raise FileNotFoundError("Got no results searching for BHD for BDT {}".format(self.path))
 
         return path
@@ -62,10 +60,10 @@ class BDTFile(BinaryFile):
             self.file.seek(record.int32('record_offset'))
             data = self.read(record.int32('record_size'))
 
-            file_cls = utils.class_for_data(data)
+            file_cls = lib.utils.class_for_data(data)
             if file_cls is None or record.path.endswith("c4110.chrtpfbdt"):
                 self.log("Writing data for {} to {}".format(record.record_name, record.path), depth)
-                filesystem.write_data(record.path, data)
+                lib.filesystem.write_data(record.path, data)
             elif file_cls == BDTFile:
                 # just store data for now, because we need to wait for the BHD to be extracted
                 record.bdt_data = io.BytesIO(data)
@@ -114,7 +112,7 @@ class BDTFile(BinaryFile):
             elif hasattr(record, 'sub_manifest') and not record.path.endswith("c4110.chrtpfbdt"):
                 self.write(record.sub_manifest.get_data(record.path, depth + 1))
             else:
-                self.write(filesystem.read_data(record.path))
+                self.write(lib.filesystem.read_data(record.path))
             data_size = self.file.tell() - cur_position
             record.header['record_size'] = self.int32_bytes(data_size)
             if 'redundant_size' in record.header:

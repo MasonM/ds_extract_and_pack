@@ -1,12 +1,11 @@
-import os
 import io
+import os
 import zlib
 
-from .binary_file import BinaryFile, Manifest
-from . import utils, filesystem
+import lib
 
 
-class DCXFile(BinaryFile):
+class DCXFile(lib.BinaryFile):
     MAGIC_HEADER = b"DCX\x00"
 
     def __init__(self, file, path):
@@ -16,7 +15,7 @@ class DCXFile(BinaryFile):
     def extract_file(self, depth):
         self.log("Reading file {}".format(self.path), depth)
 
-        manifest = Manifest(self, header=[
+        manifest = lib.Manifest(self, header=[
             ("signature", self.consume(self.MAGIC_HEADER)),
             ("unknown1", self.consume(0x10000, 4)),
             ("dcs_offset", self.consume(0x18, 4)),
@@ -46,15 +45,15 @@ class DCXFile(BinaryFile):
             )
             raise ValueError(msg)
 
-        uncompressed_filename = filesystem.normalize_filepath(os.path.basename(self.path)[:-4], self.path)
+        uncompressed_filename = lib.filesystem.normalize_filepath(os.path.basename(self.path)[:-4], self.path)
         manifest.uncompressed_filename = uncompressed_filename
 
-        file_cls = utils.class_for_data(uncompressed_data)
+        file_cls = lib.utils.class_for_data(uncompressed_data)
         if file_cls:
             manifest.sub_manifest = file_cls(io.BytesIO(uncompressed_data), uncompressed_filename).extract_file(depth + 1)
         else:
             self.log("Writing data to {}".format(uncompressed_filename), depth)
-            filesystem.write_data(uncompressed_filename, uncompressed_data)
+            lib.filesystem.write_data(uncompressed_filename, uncompressed_data)
 
         return manifest
 
@@ -66,7 +65,7 @@ class DCXFile(BinaryFile):
         if hasattr(manifest, 'sub_manifest'):
             uncompressed_data = manifest.sub_manifest.get_data(manifest.uncompressed_filename, depth + 1)
         else:
-            uncompressed_data = filesystem.read_data(manifest.uncompressed_filename)
+            uncompressed_data = lib.filesystem.read_data(manifest.uncompressed_filename)
 
         manifest.header['uncompressed_size'] = self.int32_bytes(len(uncompressed_data))
 

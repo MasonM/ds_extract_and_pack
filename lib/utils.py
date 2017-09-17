@@ -1,8 +1,8 @@
-from . import bdt_file, tpf_file, dcx_file, bnd3_file
+import lib
 
 
 def class_for_data(data):
-    classes_to_check = [bnd3_file.BND3File, tpf_file.TPFFile, dcx_file.DCXFile, bdt_file.BDTFile]
+    classes_to_check = [lib.BND3File, lib.TPFFile, lib.DCXFile, lib.BDTFile]
 
     for file_cls in classes_to_check:
         if data.startswith(file_cls.MAGIC_HEADER):

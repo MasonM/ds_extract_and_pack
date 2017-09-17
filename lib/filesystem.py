@@ -3,7 +3,7 @@ import os
 import re
 
 import config
-from . import dupe_files
+import lib.dupe_files
 
 filesystem = {}
 
@@ -18,8 +18,8 @@ def normalize_filepath(path, base_path):
 
     path = path.lstrip("\\").replace("\\", "/")
 
-    if path in dupe_files.DUPE_FILES:
-        path = dupe_files.fix_dupe_path(path)
+    if path in lib.dupe_files.DUPE_FILES:
+        path = lib.dupe_files.fix_dupe_path(path)
 
     path = os.path.join(os.path.dirname(base_path), path)
 

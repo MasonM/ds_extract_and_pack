@@ -1,16 +1,16 @@
 import os
 
-from .binary_file import BinaryFile, Manifest
-from . import name_hash_handler, filesystem
+import lib
+import lib.name_hash_handler
 
 
-class BHD5File(BinaryFile):
+class BHD5File(lib.BinaryFile):
     MAGIC_HEADER = b"BHD5"
 
     def extract_file(self, depth):
         self.log("Parsing file {}".format(self.path), depth)
 
-        manifest = Manifest(self, header=[
+        manifest = lib.Manifest(self, header=[
             ("signature", self.consume(self.MAGIC_HEADER)),
             ("unknown1", self.consume(b"\xff\x00\x00\x00\x01\x00\x00\x00")),
             ("file_size", self.read(4)),
@@ -34,7 +34,7 @@ class BHD5File(BinaryFile):
         return manifest
 
     def _read_bin(self, depth):
-        bin_record = Manifest(self, header=[
+        bin_record = lib.Manifest(self, header=[
             ("record_count", self.read(4)),
             ("offset", self.read(4)),
         ])
@@ -49,7 +49,7 @@ class BHD5File(BinaryFile):
         return bin_record
 
     def _read_record(self):
-        record = Manifest(self, header=[
+        record = lib.Manifest(self, header=[
             ('record_hash', self.read(4)),
             ('record_size', self.read(4)),
             ('record_offset', self.read(4)),
@@ -58,11 +58,11 @@ class BHD5File(BinaryFile):
 
         record_hash = record.int32('record_hash')
         try:
-            record.record_name = name_hash_handler.get_name_from_hash(record_hash).lstrip("/").replace("/", os.sep)
+            record.record_name = lib.name_hash_handler.get_name_from_hash(record_hash).lstrip("/").replace("/", os.sep)
         except KeyError:
             raise ValueError("Failed to find {} in name hash dict".format(record_hash))
 
-        filepath = filesystem.normalize_filepath(record.record_name, self.path)
+        filepath = lib.filesystem.normalize_filepath(record.record_name, self.path)
         record.path = filepath
 
         return record

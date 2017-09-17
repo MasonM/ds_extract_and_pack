@@ -4,12 +4,7 @@ import pickle
 import shutil
 
 import config
-from lib.bdt_file import BDTFile
-from lib.bhd5_file import BHD5File
-from lib.bhf3_file import BHF3File
-from lib.bnd3_file import BND3File
-from lib.dcx_file import DCXFile
-from lib.tpf_file import TPFFile
+from lib import BDTFile, BHD5File, BHF3File, BND3File, DCXFile, TPFFile
 
 extract_base_dir = os.path.abspath("test")
 second_extract_base_dir = os.path.abspath("second_test")
