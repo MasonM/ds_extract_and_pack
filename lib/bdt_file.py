@@ -12,8 +12,8 @@ class BDTFile(lib.BinaryFile):
     def extract_file(self, depth):
         self.log("Reading file {}".format(self.path), depth)
 
-        self.consume(self.MAGIC_HEADER)
-        self.consume(0x0, 6)
+        self.expect(self.MAGIC_HEADER)
+        self.expect(0x0, 6)
 
         if self.path.endswith(self.C4110_FILENAME):
             data = io.BytesIO(fixed_data.c4110_replacement.DATA)

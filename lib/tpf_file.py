@@ -8,10 +8,10 @@ class TPFFile(lib.BinaryFile):
         self.log("Reading file {}".format(self.path), depth)
 
         manifest = lib.Manifest(self, header=[
-            ('signature', self.consume(self.MAGIC_HEADER)),
+            ('signature', self.expect(self.MAGIC_HEADER)),
             ("size_sum", self.read(4)),
             ("record_count", self.read(4)),
-            ("flags", self.consume(0x20300, 4)),
+            ("flags", self.expect(0x20300, 4)),
         ])
         manifest.records = []
 
@@ -29,7 +29,7 @@ class TPFFile(lib.BinaryFile):
             ('data_size', self.read(4)),
             ('id', self.read(4)),
             ('filename_offset', self.read(4)),
-            ('padding', self.consume(0x0, 4)),
+            ('padding', self.expect(0x0, 4)),
         ])
 
         position = self.file.tell()

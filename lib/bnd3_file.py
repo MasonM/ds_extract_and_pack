@@ -10,12 +10,12 @@ class BND3File(lib.BinaryFile):
         self.log("Reading file {}".format(self.path), depth)
 
         manifest = lib.Manifest(self, header=[
-            ("signature", self.consume(self.MAGIC_HEADER)),
+            ("signature", self.expect(self.MAGIC_HEADER)),
             ("id", self.read(8)),
             ("flags", self.read(4)),
             ("record_count", self.read(4)),
             ("header_size", self.read(4)),
-            ("padding", self.consume(0x0, 8)),
+            ("padding", self.expect(0x0, 8)),
         ])
         manifest.records = []
 
@@ -32,7 +32,7 @@ class BND3File(lib.BinaryFile):
 
     def _read_record(self, flags, depth):
         record = lib.Manifest(self, header=[
-            ("record_sep", self.consume(0x40, 4)),
+            ("record_sep", self.expect(0x40, 4)),
             ('data_size', self.read(4)),
             ('data_offset', self.read(4)),
             ('id', self.read(4)),

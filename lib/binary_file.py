@@ -29,7 +29,7 @@ class BinaryFile:
     def read(self, num_bytes):
         return self.file.read(num_bytes)
 
-    def consume(self, expected_bytes, num_to_read=None):
+    def expect(self, expected_bytes, num_to_read=None):
         if num_to_read:
             expected_bytes = expected_bytes.to_bytes(num_to_read, self.endian)
         else:

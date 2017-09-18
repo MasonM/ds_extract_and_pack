@@ -10,8 +10,8 @@ class BHD5File(lib.BinaryFile):
         self.log("Parsing file {}".format(self.path), depth)
 
         manifest = lib.Manifest(self, header=[
-            ("signature", self.consume(self.MAGIC_HEADER)),
-            ("unknown1", self.consume(b"\xff\x00\x00\x00\x01\x00\x00\x00")),
+            ("signature", self.expect(self.MAGIC_HEADER)),
+            ("unknown1", self.expect(b"\xff\x00\x00\x00\x01\x00\x00\x00")),
             ("file_size", self.read(4)),
             ("bin_count", self.read(4)),
             ("bin_record_offset", self.read(4)),
@@ -52,7 +52,7 @@ class BHD5File(lib.BinaryFile):
             ('record_hash', self.read(4)),
             ('record_size', self.read(4)),
             ('record_offset', self.read(4)),
-            ('padding', self.consume(0x0, 4)),
+            ('padding', self.expect(0x0, 4)),
         ])
 
         record_hash = record.int32('record_hash')

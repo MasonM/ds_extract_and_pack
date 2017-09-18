@@ -8,12 +8,12 @@ class BHF3File(lib.BinaryFile):
         self.log("Parsing file {}".format(self.path), depth)
 
         manifest = lib.Manifest(self, header=[
-            ("signature", self.consume(self.MAGIC_HEADER)),
-            ("id", self.consume(b"07D7R6\x00\x00")),
+            ("signature", self.expect(self.MAGIC_HEADER)),
+            ("id", self.expect(b"07D7R6\x00\x00")),
             ("version", self.read(4)),
             ("record_count", self.read(4)),
             ("header_size", self.read(4)),
-            ("padding", self.consume(0x0, 8)),
+            ("padding", self.expect(0x0, 8)),
         ])
         manifest.records = []
 
@@ -28,7 +28,7 @@ class BHF3File(lib.BinaryFile):
 
     def _read_record(self, depth):
         record = lib.Manifest(self, header=[
-            ("record_separator", self.consume(0x40, 4)),
+            ("record_separator", self.expect(0x40, 4)),
             ('record_size', self.read(4)),
             ('record_offset', self.read(4)),
             ('id', self.read(4)),

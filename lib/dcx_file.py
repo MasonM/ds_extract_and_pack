@@ -16,23 +16,23 @@ class DCXFile(lib.BinaryFile):
         self.log("Reading file {}".format(self.path), depth)
 
         manifest = lib.Manifest(self, header=[
-            ("signature", self.consume(self.MAGIC_HEADER)),
-            ("unknown1", self.consume(0x10000, 4)),
-            ("dcs_offset", self.consume(0x18, 4)),
-            ("dcp_offset", self.consume(0x24, 4)),
-            ("redundant_dcp_offset", self.consume(0x24, 4)),
-            ("dcs_header_size", self.consume(0x2c, 4)),
-            ("dcs_signature", self.consume(b"DCS\x00")),
+            ("signature", self.expect(self.MAGIC_HEADER)),
+            ("unknown1", self.expect(0x10000, 4)),
+            ("dcs_offset", self.expect(0x18, 4)),
+            ("dcp_offset", self.expect(0x24, 4)),
+            ("redundant_dcp_offset", self.expect(0x24, 4)),
+            ("dcs_header_size", self.expect(0x2c, 4)),
+            ("dcs_signature", self.expect(b"DCS\x00")),
             ("uncompressed_size", self.read(4)),
             ("compressed_size", self.read(4)),
-            ("dcp_signature", self.consume(b"DCP\x00")),
-            ("dcp_method", self.consume(b"DFLT")),
-            ("dca_offset", self.consume(0x20, 4)),
-            ("compression_level", self.consume(0x09000000, 4)),
-            ("unknown2", self.consume(0x0, 12)),
-            ("zlib_version", self.consume(0x00010100, 4)),
-            ("dca_signature", self.consume(b"DCA\x00")),
-            ("dca_header_size", self.consume(0x8, 4)),
+            ("dcp_signature", self.expect(b"DCP\x00")),
+            ("dcp_method", self.expect(b"DFLT")),
+            ("dca_offset", self.expect(0x20, 4)),
+            ("compression_level", self.expect(0x09000000, 4)),
+            ("unknown2", self.expect(0x0, 12)),
+            ("zlib_version", self.expect(0x00010100, 4)),
+            ("dca_signature", self.expect(b"DCA\x00")),
+            ("dca_header_size", self.expect(0x8, 4)),
         ])
         manifest.end_header_pos = self.file.tell()
 
