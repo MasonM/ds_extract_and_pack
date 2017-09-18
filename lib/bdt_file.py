@@ -7,6 +7,7 @@ import lib
 
 class BDTFile(lib.BinaryFile):
     MAGIC_HEADER = b"BDF307D7R6"
+    C4110_FILENAME = "c4110.chrtpfbdt" # this file is missing the BHD header
 
     def extract_file(self, depth):
         self.log("Reading file {}".format(self.path), depth)
@@ -14,7 +15,7 @@ class BDTFile(lib.BinaryFile):
         self.consume(self.MAGIC_HEADER)
         self.consume(0x0, 6)
 
-        if self.path.endswith("c4110.chrtpfbdt"):
+        if self.path.endswith(self.C4110_FILENAME):
             data = io.BytesIO(fixed_data.c4110_replacement.DATA)
             manifest = lib.BHF3File(data, self.path[:-3] + "bhd").extract_file(depth + 1)
         else:
@@ -61,7 +62,7 @@ class BDTFile(lib.BinaryFile):
             data = self.read(record.int32('record_size'))
 
             file_cls = self.class_for_data(data)
-            if file_cls is None or record.path.endswith("c4110.chrtpfbdt"):
+            if file_cls is None or record.path.endswith(self.C4110_FILENAME):
                 self.log("Writing data for {} to {}".format(record.record_name, record.path), depth)
                 lib.filesystem.write_data(record.path, data)
             elif file_cls == BDTFile:
@@ -109,7 +110,7 @@ class BDTFile(lib.BinaryFile):
             record.header['record_offset'] = self.int32_bytes(cur_position)
             if record.path in bdt_data:
                 self.write(bdt_data[record.path])
-            elif hasattr(record, 'sub_manifest') and not record.path.endswith("c4110.chrtpfbdt"):
+            elif hasattr(record, 'sub_manifest') and not record.path.endswith(self.C4110_FILENAME):
                 self.write(record.sub_manifest.get_data(record.path, depth + 1))
             else:
                 self.write(lib.filesystem.read_data(record.path))
@@ -121,6 +122,7 @@ class BDTFile(lib.BinaryFile):
                 self.pad_to_hex_boundary()
 
         if depth == 1:
+            self.log("Writing BDT header for {}".format(self.path), depth)
             header_filename = self._get_header_filename(depth)
-            manifest.file_cls(open(header_filename, "wb"), header_filename).create_file(manifest, depth)
+            manifest.file_cls(open(header_filename, "wb"), header_filename).create_file(manifest, depth + 1)
 

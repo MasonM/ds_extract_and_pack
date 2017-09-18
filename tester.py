@@ -48,9 +48,9 @@ def do_read_write_test(filename, cls):
 
     do_write_test(out_filename, manifest, cls)
 
-    dir_prep(second_extract_base_dir)
-    config.extract_base_dir = second_extract_base_dir
-    cls(open(out_filename, "rb"), out_filename).extract_file(depth=1)
+    #dir_prep(second_extract_base_dir)
+    #config.extract_base_dir = second_extract_base_dir
+    #cls(open(out_filename, "rb"), out_filename).extract_file(depth=1)
 
     if filecmp.cmp(in_filename, out_filename):
         print("Files identical")
@@ -70,7 +70,7 @@ dcx_file = "m18_00_00_00.emeld."
 #bdt_file = "m10_0000.tpf"
 #bdt_file = "m16_0002.tpf"
 #bdt_file = "good_c4100.chrtpf"
-bdt_file = "dvdbnd0."
+bdt_file = "dvdbnd2."
 
 test = "bdt"
 
