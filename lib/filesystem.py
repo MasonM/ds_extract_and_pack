@@ -5,7 +5,6 @@ import re
 import config
 import fixed_data.dupe_files
 import fixed_data.filenames
-import fixed_data.c4110_replacement
 
 filesystem = {}
 dupe_counter = {}
@@ -93,7 +92,8 @@ def write_data(file_path, data):
                 other_digest = hashlib.md5(open(file_path, "rb").read()).hexdigest()
                 if self_digest == other_digest:
                     print("WARN: File already exists and has same hash: {}".format(file_path))
-                print("ERROR: File already exists and has different hash: {}".format(file_path))
+                else:
+                    ValueError("ERROR: File already exists and has different hash: {}".format(file_path))
             return
 
         open(file_path, 'wb').write(data)
