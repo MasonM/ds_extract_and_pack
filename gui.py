@@ -9,39 +9,32 @@ class Application(tk.Frame):
         self.data_dir = ""
         self.override_dir = ""
         self.pack()
-        self.create_widgets()
-
-    def create_widgets(self):
-        self.create_dir_widgets()
+        self.create_dir_widget("data_dir", "Data Directory")
+        self.create_dir_widget("override_dir", "Texture Override Directory")
         self.create_button_widgets()
         self.create_log_widgets()
 
-    def create_dir_widgets(self):
-        dir_info = (
-            ("data_dir", "Data Directory"),
-            ("override_dir", "Texture Override Directory")
-        )
-        for dir_type, label in dir_info:
-            frame = tk.Frame(self.master, bd=5)
-            frame.pack(fill=tk.X)
+    def create_dir_widget(self, dir_type, label):
+        frame = tk.Frame(self.master, bd=5)
+        frame.pack(fill=tk.X)
 
-            label = tk.Label(frame, text=label, wraplength=150, width=15)
-            label.pack(side=tk.LEFT)
+        label = tk.Label(frame, text=label, wraplength=150, width=15)
+        label.pack(side=tk.LEFT)
 
-            dir_string = tk.StringVar(frame)
-            setattr(self, dir_type, dir_string)
-            entry = tk.Entry(frame, width=10, textvariable=dir_string)
-            entry.pack(side=tk.LEFT, expand=True, fill=tk.X)
+        dir_string = tk.StringVar(frame)
+        setattr(self, dir_type, dir_string)
+        entry = tk.Entry(frame, width=10, textvariable=dir_string)
+        entry.pack(side=tk.LEFT, expand=True, fill=tk.X)
 
-            button = tk.Button(frame, text='Browse', command=self.dir_button_click(frame, dir_string))
-            button.pack(side=tk.LEFT)
+        button = tk.Button(frame, text='Browse', command=self.dir_button_click(frame, dir_string))
+        button.pack(side=tk.LEFT)
 
     def create_button_widgets(self):
         frame = tk.Frame(self.master, bd=5)
         frame.pack()
 
         patch_files = tk.Button(frame, text="Patch Data Files", command=self.master.destroy)
-        patch_files.pack(side=tk.LEFT)
+        patch_files.pack(side=tk.LEFT, padx=20)
 
         restore_backup = tk.Button(frame, text="Restore Backup", command=self.master.destroy)
         restore_backup.pack(side=tk.RIGHT)

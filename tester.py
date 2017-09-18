@@ -48,13 +48,9 @@ def do_read_write_test(filename, cls):
 
     do_write_test(out_filename, manifest, cls)
 
-    if manifest.file_cls == BHD5File or manifest.file_cls == BHF3File:
-        header_filepath = os.path.join(output_base_dir, os.path.basename(manifest.path))
-        open(header_filepath, "wb").write(manifest.get_data(header_filepath, 1))
-
-    #dir_prep(second_extract_base_dir)
-    #config.extract_base_dir = second_extract_base_dir
-    #cls(open(out_filename, "rb"), out_filename).extract_file(depth=1)
+    dir_prep(second_extract_base_dir)
+    config.extract_base_dir = second_extract_base_dir
+    cls(open(out_filename, "rb"), out_filename).extract_file(depth=1)
 
     if filecmp.cmp(in_filename, out_filename):
         print("Files identical")

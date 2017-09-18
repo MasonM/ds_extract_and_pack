@@ -119,3 +119,8 @@ class BDTFile(lib.BinaryFile):
                 record.header['redundant_size'] = record.header['record_size']
             if record != records[-1][1]:
                 self.pad_to_hex_boundary()
+
+        if depth == 1:
+            header_filename = self._get_header_filename(depth)
+            manifest.file_cls(open(header_filename, "wb"), header_filename).create_file(manifest, depth)
+
