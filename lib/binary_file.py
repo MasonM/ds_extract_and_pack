@@ -19,6 +19,15 @@ class BinaryFile:
                 return file_cls
         return None
 
+    @staticmethod
+    def class_for_filename(filename):
+        data_file = open(filename, "rb")
+        signature = data_file.read(4)
+        data_file.seek(0)
+
+        file_cls = BinaryFile.class_for_data(signature)
+        return file_cls(data_file, filename)
+
     def write(self, *args):
         for arg in args:
             self.file.write(arg)

@@ -54,6 +54,7 @@ def normalize_filepath(path, base_path):
     path = os.path.join(os.path.dirname(base_path), path)
 
     # Flatten directory structure
+    path = re.sub(r"/([^/]+)/\1/", r"/\1/", path)
     path = re.sub(r"((?:[^/]+/)+)FRPG/data/(Model|INTERROOT_win32)/(?:param/)?\1", r"\1", path)
     path = re.sub(r"([^/]+)/FRPG/data/Msg/Data_\1/win32", r"\1", path)
     path = re.sub(r"FRPG/Source/Shader/([^/]*)/WIN32", r"\1", path)

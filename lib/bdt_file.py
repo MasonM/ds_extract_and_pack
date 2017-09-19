@@ -6,13 +6,15 @@ import lib
 
 
 class BDTFile(lib.BinaryFile):
-    MAGIC_HEADER = b"BDF307D7R6"
+    MAGIC_HEADER = b"BDF3"
+    MAGIC_ID = b"07D7R6"
     C4110_FILENAME = "c4110.chrtpfbdt" # this file is missing the BHD header
 
     def extract_file(self, depth):
         self.log("Reading file {}".format(self.path), depth)
 
         self.expect(self.MAGIC_HEADER)
+        self.expect(self.MAGIC_ID)
         self.expect(0x0, 6)
 
         if self.path.endswith(self.C4110_FILENAME):
@@ -82,6 +84,7 @@ class BDTFile(lib.BinaryFile):
         self.log("Writing file {}".format(self.path), depth)
 
         self.write(self.MAGIC_HEADER)
+        self.write(self.MAGIC_ID)
         self.write(bytearray(6))
 
         records = sorted(enumerate(manifest.records), key=lambda r: r[1].int32('record_offset'))
