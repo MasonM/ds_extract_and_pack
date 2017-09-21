@@ -40,11 +40,10 @@ def do_write_test(filename, manifest, cls):
 def do_read_write_test(filename, cls):
     in_filename = os.path.join("..", "test_files", filename)
     out_filename = os.path.join(output_base_dir, filename)
-    manifest_filename = os.path.join(output_base_dir, "manifest")
+    #manifest_filename = os.path.join(output_base_dir, "manifest")
     #manifest = pickle.load(open(manifest_filename, "rb"))
 
     manifest = do_read_test(in_filename, cls)
-    pickle.dump(manifest, open(manifest_filename, "wb"), protocol=4)
 
     do_write_test(out_filename, manifest, cls)
 
@@ -70,7 +69,7 @@ dcx_file = "m18_00_00_00.emeld."
 #bdt_file = "m10_0000.tpf"
 #bdt_file = "m16_0002.tpf"
 #bdt_file = "good_c4100.chrtpf"
-bdt_file = "dvdbnd2."
+bdt_file = "dvdbnd0."
 
 test = "bdt"
 
@@ -81,29 +80,15 @@ elif test == "bnd3":
 elif test == "bhd5":
     do_read_write_test(bdt_file + "bhd5", BHD5File)
 elif test == "bdt":
-    filename = os.path.join("..", "test_files", "dvdbnd0.bdt")
-    manifest_filename = os.path.join(output_base_dir, "manifest")
+    filename = os.path.join("..", "test_files", bdt_file + "bdt")
+    manifest_filename = os.path.join(output_base_dir, bdt_file + "manifest")
+
+    #manifest = pickle.loads(open(manifest_filename, "rb").read())
+    #output_filename = os.path.join(output_base_dir, bdt_file + "bdt")
+    #do_write_test(output_filename, manifest, BDTFile)
+
+    #manifest = do_read_test(filename, BDTFile)
     do_read_write_test(bdt_file + "bdt", BDTFile)
-
-    #pickle.dump(manifest, open(manifest_filename, "wb"))
-
-    #manifest = pickle.loads(open(manifest_filename, "rb").read())
-    #output_filename = os.path.join(output_base_dir, filename)
-    #do_write_test(os.path.join(output_base_dir, bdt_file + "bdt"), manifest, BDTFile)
-
-    #filename = os.path.join("..", "test_files", "dvdbnd1.bdt")
-    #manifest = BDTFile(open(filename, "rb"), filename, extract_base_dir).extract_file(depth=1)
-    #manifest_filename = os.path.join(output_base_dir, "dvdbnd1.manifest")
-    #pickle.dump(manifest, open(manifest_filename, "wb"))
-
-    #manifest_filename = os.path.join(output_base_dir, "manifest")
-    #manifest = pickle.loads(open(manifest_filename, "rb").read())
-    #manifest = do_read_test(os.path.join("..", "test_files", bdt_file + "bdt"), BDTFile)
-    #do_write_test(os.path.join(output_base_dir, bdt_file + "bdt"), manifest, BDTFile)
-    #do_read_test(os.path.join(output_base_dir, bdt_file + "bdt"), BDTFile)
-
-    #do_read_test(os.path.join("..", "test_files", bdt_file + "bdt"), BDTFile)
-    #do_read_test(os.path.join(output_base_dir, bdt_file + "bdt"), BDTFile)
 elif test == "dcx":
     do_read_write_test(dcx_file + "dcx", DCXFile)
 

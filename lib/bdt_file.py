@@ -100,7 +100,10 @@ class BDTFile(lib.BinaryFile):
                 record.path
             ), depth)
 
-            bdt_data[record.path] = record.sub_manifest.get_data(record.path, depth + 1)
+            with io.BytesIO() as buffer:
+                BDTFile(buffer, record.path).create_file(record.sub_manifest, depth + 1)
+                buffer.seek(0)
+                bdt_data[record.path] = buffer.read()
 
         for record_num, record in records:
             self.log("Writing data for record num {}, name {}, actual name = {}".format(

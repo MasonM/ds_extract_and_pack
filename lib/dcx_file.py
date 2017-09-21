@@ -2,6 +2,7 @@ import io
 import os
 import zlib
 
+import config
 import lib
 
 
@@ -69,7 +70,7 @@ class DCXFile(lib.BinaryFile):
 
         manifest.header['uncompressed_size'] = self.int32_bytes(len(uncompressed_data))
 
-        compressed_data = zlib.compress(uncompressed_data, 9)
+        compressed_data = zlib.compress(uncompressed_data, config.zlib_compression_level)
 
         manifest.header['compressed_size'] = self.int32_bytes(len(compressed_data))
         self.write(compressed_data)

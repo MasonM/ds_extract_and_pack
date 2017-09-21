@@ -70,8 +70,7 @@ def read_data(file_path):
             return open(override_file_path, "rb").read()
     if config.in_memory and not file_path.endswith("bhd5"):
         return filesystem[file_path]
-    else:
-        return open(os.path.join(config.extract_base_dir, file_path), "rb").read()
+    return open(os.path.join(config.extract_base_dir, file_path), "rb").read()
 
 
 def isfile(file_path):

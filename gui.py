@@ -1,7 +1,9 @@
+import os
 import pickle
 import tkinter as tk
 import tkinter.filedialog
 import tkinter.scrolledtext
+import tkinter.messagebox
 
 import config
 import lib
@@ -54,7 +56,7 @@ class Application(tk.Frame):
         self.data_dir = tk.StringVar()
         self.data_dir_frame = tk.Frame(label_frame, bd=5)
         self.data_dir_frame.grid(row=3, sticky=tk.EW)
-        self.create_dir_widgets(self.data_dir_frame, self.data_dir, "Data file directory", self.dir_button_click)
+        self.create_dir_widgets(self.data_dir_frame, self.data_dir, "Data directory", self.dir_button_click)
 
         self.row_num += 1
 
@@ -140,20 +142,55 @@ class Application(tk.Frame):
         tk.scrolledtext.ScrolledText(frame, height=10, wrap=tk.WORD, pady=2, padx=2).grid()
 
     def do_execute(self):
-        mode = self.mode.get()
         target_type = self.target_type.get()
         if target_type == self.TARGET_TYPE_FILE:
             target = self.data_file.get()
+            if not target:
+                tk.messagebox.showerror("Error", "Must set target file")
+                return
+            if not os.path.isdir(target):
+                tk.messagebox.showerror("Error", "Target directory does not exist")
+                return
+            target_files = [target]
         else:
             target = self.data_dir.get()
+            if not target:
+                tk.messagebox.showerror("Error", "Must set target directory")
+                return
+            if not os.path.isfile(target):
+                tk.messagebox.showerror("Error", "Target directory does not exist")
+                return
+            target_files = os.listdir(target)
 
+        mode = self.mode.get()
         if mode == self.MODE_EXTRACT:
-            config.extract_base_dir = self.extract_base_dir.get()
+            extract_base_dir = self.extract_base_dir.get()
+            if not extract_base_dir:
+                tk.messagebox.showerror("Error", "Must set base directory for extracted files")
+                return
+            elif not os.path.isdir(extract_base_dir):
+                tk.messagebox.showerror("Error", "Invalid base directory for extracted files")
+                return
 
-            manifest = lib.BinaryFile.class_for_filename(target).extract_file(depth=1)
+            config.extract_base_dir = extract_base_dir
+            num_recognized = self.extract_files(target_files)
+            if target_type == self.TARGET_TYPE_FILE and num_recognized == 0:
+                tk.messagebox.showerror("Error", "Unknown file type for " + target)
+                return
 
+    @staticmethod
+    def extract_files(target_files):
+        num_recognized = 0
+        for target in target_files:
+            binary_reader = lib.BinaryFile.class_for_filename(target)
+            if not binary_reader:
+                continue
+
+            manifest = binary_reader.extract_file(depth=1)
             manifest_filename = target.rsplit(".", 1)[0] + ".manifest"
             pickle.dump(manifest, open(manifest_filename, "wb"), protocol=4)
+            num_recognized += 1
+        return num_recognized
 
     @staticmethod
     def file_button_click(frame, file_string):

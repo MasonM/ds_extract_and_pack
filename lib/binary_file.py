@@ -26,7 +26,9 @@ class BinaryFile:
         data_file.seek(0)
 
         file_cls = BinaryFile.class_for_data(signature)
-        return file_cls(data_file, filename)
+        if file_cls:
+            return file_cls(data_file, filename)
+        return None
 
     def write(self, *args):
         for arg in args:
