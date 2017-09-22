@@ -45,12 +45,12 @@ def normalize_filepath(path, base_path):
 
     if path.lower().startswith("n:\\"):
         path = path[3:]
-
-    path = os.path.join(os.path.dirname(base_path), path)
-    path = path.lstrip("\\").replace("\\", "/")
+    path = path.lstrip("\\")
 
     if path in fixed_data.dupe_files.DUPE_FILES:
         path = fix_dupe_path(path)
+
+    path = os.path.join(os.path.dirname(base_path), path).replace("\\", "/")
 
     # Flatten directory structure
     path = re.sub(r"/([^/]+)/\1/", r"/\1/", path)
@@ -82,18 +82,25 @@ def isfile(file_path):
 
 def write_data(file_path, data):
     if config.in_memory:
-        filesystem[file_path] = data
+        if file_path in filesystem:
+            compare_data(file_path, data, filesystem[file_path])
+        else:
+            filesystem[file_path] = data
     else:
         file_path = os.path.join(config.extract_base_dir, file_path)
         os.makedirs(os.path.dirname(file_path), exist_ok=True)
         if os.path.isfile(file_path):
-            if config.debug:
-                self_digest = hashlib.md5(data).hexdigest()
-                other_digest = hashlib.md5(open(file_path, "rb").read()).hexdigest()
-                if self_digest == other_digest:
-                    print("WARN: File already exists and has same hash: {}".format(file_path))
-                else:
-                    raise ValueError("ERROR: File already exists and has different hash: {}".format(file_path))
-            return
+            compare_data(file_path, data, open(file_path, "rb").read())
+        else:
+            open(file_path, 'wb').write(data)
 
-        open(file_path, 'wb').write(data)
+
+def compare_data(file_path, first, second):
+    if not config.debug:
+        return
+    self_digest = hashlib.md5(first).hexdigest()
+    other_digest = hashlib.md5(second).hexdigest()
+    if self_digest == other_digest:
+        print("WARN: File already exists and has same hash: {}".format(file_path))
+    else:
+        raise ValueError("ERROR: File already exists and has different hash: {}".format(file_path))
