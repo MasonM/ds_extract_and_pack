@@ -47,7 +47,7 @@ def normalize_filepath(path, base_path):
         path = path[3:]
     path = path.lstrip("\\")
 
-    if path in fixed_data.dupe_files.DUPE_FILES:
+    if path.replace("\\", "/") in fixed_data.dupe_files.DUPE_FILES:
         path = fix_dupe_path(path)
 
     path = os.path.join(os.path.dirname(base_path), path).replace("\\", "/")
