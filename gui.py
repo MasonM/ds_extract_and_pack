@@ -177,10 +177,14 @@ class Application(tk.Frame):
             if target_type == self.TARGET_TYPE_FILE and num_recognized == 0:
                 tk.messagebox.showerror("Error", "Unknown file type for " + target)
                 return
+        elif mode == self.MODE_EXTRACT:
+            pass
+        elif mode == self.MODE_PATCH:
+            pass
 
     @staticmethod
     def extract_files(target_files):
-        num_recognized = 0
+        recognized = []
         for target in target_files:
             binary_reader = lib.BinaryFile.class_for_filename(target)
             if not binary_reader:
@@ -189,8 +193,8 @@ class Application(tk.Frame):
             manifest = binary_reader.extract_file(depth=1)
             manifest_filename = target.rsplit(".", 1)[0] + ".manifest"
             pickle.dump(manifest, open(manifest_filename, "wb"), protocol=4)
-            num_recognized += 1
-        return num_recognized
+            recognized.append(target)
+        return recognized
 
     @staticmethod
     def file_button_click(frame, file_string):
