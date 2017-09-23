@@ -91,7 +91,7 @@ class BND3File(lib.BinaryFile):
             if hasattr(record, 'sub_manifest'):
                 self.write(record.sub_manifest.get_data(record.path, depth + 1))
             else:
-                self.write(lib.filesystem.read_data(record.path))
+                self.write(lib.filesystem.read_data(record.path, depth))
 
             data_size = self.file.tell() - cur_position
             record.header['data_size'] = self.int32_bytes(data_size)

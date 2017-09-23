@@ -19,13 +19,13 @@ class BinaryFile:
                 return file_cls
         return None
 
-    @staticmethod
-    def class_for_filename(filename):
+    @classmethod
+    def class_for_filename(cls, filename):
         data_file = open(filename, "rb")
         signature = data_file.read(4)
         data_file.seek(0)
 
-        file_cls = BinaryFile.class_for_data(signature)
+        file_cls = cls.class_for_data(signature)
         if file_cls:
             return file_cls(data_file, filename)
         return None
@@ -72,12 +72,9 @@ class BinaryFile:
         return i.to_bytes(4, byteorder=self.endian)
 
     def log(self, msg, depth):
-        prefix = ""
-        if depth > 1:
-            prefix += ("  " * (depth - 1)) + "|"
-        prefix += self.__class__.__name__.replace("File", "")
+        prefix = self.__class__.__name__.replace("File", "")
         prefix += "(offset=" + str(self.file.tell()) + "): "
-        print(prefix + msg)
+        lib.logger.log(msg, depth, prefix)
 
 
 class Manifest:

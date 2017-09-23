@@ -68,7 +68,7 @@ class TPFFile(lib.BinaryFile):
         size_sum = 0
         for record in manifest.records:
             self.log("Writing record data for {}".format(record.path), depth)
-            data = lib.filesystem.read_data(record.path)
+            data = lib.filesystem.read_data(record.path, depth)
             record.header['data_size'] = self.int32_bytes(len(data))
             size_sum += record.int32('data_size')
             record.header['data_offset'] = self.int32_bytes(self.file.tell())

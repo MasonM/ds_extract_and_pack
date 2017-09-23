@@ -41,7 +41,7 @@ def do_write_test(filename, manifest, cls):
 
 
 def do_read_write_test(filename, cls):
-    in_filename = os.path.join("..", "test_files", filename)
+    in_filename = os.path.join("test_files", filename)
     out_filename = os.path.join(output_base_dir, filename)
     #manifest_filename = os.path.join(output_base_dir, "manifest")
     #manifest = pickle.load(open(manifest_filename, "rb"))
@@ -52,7 +52,7 @@ def do_read_write_test(filename, cls):
 
     config.in_memory = False
     config.data_base_dir = output_base_dir
-    #do_read_test(out_filename, cls, second_extract_base_dir)
+    do_read_test(out_filename, cls, second_extract_base_dir)
 
     print("{}\nCOMPARING OUTPUT {} TO {}\n{}".format(separator, out_filename, in_filename, separator))
     if filecmp.cmp(in_filename, out_filename):
@@ -72,8 +72,9 @@ dcx_file = "mystery."
 #dcx_file="menu.drb."
 #bdt_file = "m10_0000.tpf"
 #bdt_file = "m16_0002.tpf"
+#bdt_file = "real_m13_0001.tpf"
 #bdt_file = "good_c4100.chrtpf"
-bdt_file = "dvdbnd1."
+bdt_file = "dvdbnd0."
 
 test = "bdt"
 
@@ -84,15 +85,17 @@ elif test == "bnd3":
 elif test == "bhd5":
     do_read_write_test(bdt_file + "bhd5", BHD5File)
 elif test == "bdt":
-    filename = os.path.join("..", "test_files", bdt_file + "bdt")
+    filename = os.path.join("test_files", bdt_file + "bdt")
     manifest_filename = os.path.join(output_base_dir, bdt_file + "manifest")
+    out_filename = os.path.join(output_base_dir, bdt_file + "bdt")
 
-    #manifest = pickle.loads(open(manifest_filename, "rb").read())
-    #output_filename = os.path.join(output_base_dir, bdt_file + "bdt")
-    #do_write_test(output_filename, manifest, BDTFile)
+    manifest = pickle.loads(open(manifest_filename, "rb").read())
+    do_write_test(out_filename, manifest, BDTFile)
 
-    #manifest = do_read_test(filename, BDTFile)
-    do_read_write_test(bdt_file + "bdt", BDTFile)
+    config.data_base_dir = output_base_dir
+    manifest = do_read_test(out_filename, BDTFile, second_extract_base_dir)
+    #pickle.dump(manifest, open(manifest_filename, "wb"), protocol=4)
+    #do_read_write_test(bdt_file + "bdt", BDTFile)
 elif test == "dcx":
     do_read_write_test(dcx_file + "dcx", DCXFile)
 

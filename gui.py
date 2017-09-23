@@ -148,39 +148,47 @@ class Application(tk.Frame):
             if not target:
                 tk.messagebox.showerror("Error", "Must set target file")
                 return
-            if not os.path.isdir(target):
-                tk.messagebox.showerror("Error", "Target directory does not exist")
+            if not os.path.isfile(target):
+                tk.messagebox.showerror("Error", "Target is not a file")
                 return
             target_files = [target]
         else:
             target = self.data_dir.get()
-            if not target:
-                tk.messagebox.showerror("Error", "Must set target directory")
-                return
-            if not os.path.isfile(target):
-                tk.messagebox.showerror("Error", "Target directory does not exist")
+            if not self.check_directory(target, type="target"):
                 return
             target_files = os.listdir(target)
 
         mode = self.mode.get()
         if mode == self.MODE_EXTRACT:
-            extract_base_dir = self.extract_base_dir.get()
-            if not extract_base_dir:
-                tk.messagebox.showerror("Error", "Must set base directory for extracted files")
-                return
-            elif not os.path.isdir(extract_base_dir):
-                tk.messagebox.showerror("Error", "Invalid base directory for extracted files")
+            if not self.check_directory(self.extract_base_dir.get(), type="extracted files"):
                 return
 
-            config.extract_base_dir = extract_base_dir
-            num_recognized = self.extract_files(target_files)
-            if target_type == self.TARGET_TYPE_FILE and num_recognized == 0:
-                tk.messagebox.showerror("Error", "Unknown file type for " + target)
+            config.extract_base_dir = self.extract_base_dir.get()
+            recognized = self.extract_files(target_files)
+            if not recognized:
+                if target_type == self.TARGET_TYPE_FILE:
+                    tk.messagebox.showerror("Error", "Unknown file type for " + target)
+                else:
+                    tk.messagebox.showerror("Error", "Not DS data files foudn in " + target)
                 return
-        elif mode == self.MODE_EXTRACT:
+        elif mode == self.MODE_REPACK:
+            if not self.check_directory(self.extract_base_dir.get(), type="extracted files"):
+                return
+            if not self.check_directory(self.override_dir.get(), type="texture overrides"):
+                return
             pass
         elif mode == self.MODE_PATCH:
             pass
+
+    @staticmethod
+    def check_directory(directory, type):
+        if not directory:
+            tk.messagebox.showerror("Error", "Must set base directory for " + type)
+            return False
+        elif not os.path.isdir(directory):
+            tk.messagebox.showerror("Error", "Invalid base directory for " + type)
+            return False
+        return True
 
     @staticmethod
     def extract_files(target_files):

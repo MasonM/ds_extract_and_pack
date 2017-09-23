@@ -1,4 +1,5 @@
 import lib.filesystem
+import lib.logger
 from lib.binary_file import BinaryFile, Manifest
 from lib.bhd5_file import BHD5File
 from lib.bhf3_file import BHF3File

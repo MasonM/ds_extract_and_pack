@@ -8,7 +8,7 @@ import lib
 class BDTFile(lib.BinaryFile):
     MAGIC_HEADER = b"BDF3"
     MAGIC_ID = b"07D7R6"
-    C4110_FILENAME = "c4110.chrtpfbdt" # this file is missing the BHD header
+    C4110_FILENAME = "c4110.chrtpfbdt"  # this file is missing the BHD header
 
     def extract_file(self, depth):
         self.log("Reading file {}".format(self.path), depth)
@@ -23,15 +23,15 @@ class BDTFile(lib.BinaryFile):
         else:
             header_filename = self._get_header_filename(depth)
             self.log("Using header file {}".format(header_filename), depth)
-            manifest = self._get_header_extractor(header_filename).extract_file(depth + 1)
+            manifest = self._get_header_extractor(header_filename, depth).extract_file(depth + 1)
 
         self._extract_records(manifest.records, depth)
 
         return manifest
 
     @staticmethod
-    def _get_header_extractor(header_filename):
-        header_data = lib.filesystem.read_data(header_filename)
+    def _get_header_extractor(header_filename, depth):
+        header_data = lib.filesystem.read_data(header_filename, depth)
 
         if header_data.startswith(lib.BHF3File.MAGIC_HEADER):
             file_cls = lib.BHF3File
@@ -44,15 +44,15 @@ class BDTFile(lib.BinaryFile):
 
     def _get_header_filename(self, depth):
         path = self.path.rsplit("bdt", 1)[0] + "bhd"
-        if depth == 1:
-            return path + "5"
+        if lib.filesystem.isfile(path + "5", disk_only=(depth == 1)):
+            return path + "5"  # bhd5 header
 
-        if not lib.filesystem.isfile(path):
+        if not lib.filesystem.isfile(path, disk_only=(depth == 1)):
             basename, ext = os.path.basename(path).rsplit('.', 1)
             path = os.sep.join([os.path.dirname(path), basename, basename + "." + ext])
 
             if not lib.filesystem.isfile(path):
-                raise FileNotFoundError("Got no results searching for BHD for BDT {}".format(self.path))
+                raise FileNotFoundError("Got no results searching for BHD for BDT {} in {}".format(self.path, path))
 
         return path
 
@@ -119,7 +119,7 @@ class BDTFile(lib.BinaryFile):
             elif hasattr(record, 'sub_manifest') and not record.path.endswith(self.C4110_FILENAME):
                 self.write(record.sub_manifest.get_data(record.path, depth + 1))
             else:
-                self.write(lib.filesystem.read_data(record.path))
+                self.write(lib.filesystem.read_data(record.path, depth))
             data_size = self.file.tell() - cur_position
             record.header['record_size'] = self.int32_bytes(data_size)
             if 'redundant_size' in record.header:
@@ -129,6 +129,7 @@ class BDTFile(lib.BinaryFile):
 
         if depth == 1:
             self.log("Writing BDT header for {}".format(self.path), depth)
-            header_filename = self._get_header_filename(depth)
-            manifest.file_cls(open(header_filename, "wb"), header_filename).create_file(manifest, depth + 1)
-
+            header_path = self.path.rsplit("bdt", 1)[0] + "bhd"
+            if isinstance(manifest, lib.BHD5File):
+                header_path += "5"
+            manifest.file_cls(open(header_path, "wb"), header_path).create_file(manifest, depth + 1)

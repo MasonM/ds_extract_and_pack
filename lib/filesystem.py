@@ -2,6 +2,7 @@ import hashlib
 import os
 import re
 
+import lib
 import config
 import fixed_data.dupe_files
 import fixed_data.filenames
@@ -62,19 +63,19 @@ def normalize_filepath(path, base_path):
     return os.path.normpath(path.replace("/", os.sep))
 
 
-def read_data(file_path):
+def read_data(file_path, depth):
     if config.override_dir:
         override_file_path = os.path.join(config.override_dir, file_path)
         if os.path.isfile(override_file_path):
-            print("USING OVERRIDE PATH {}".format(override_file_path))
+            lib.logger.log("Using override path {}".format(override_file_path), depth)
             return open(override_file_path, "rb").read()
     if config.in_memory and not file_path.endswith("bhd5"):
         return filesystem[file_path]
     return open(os.path.join(config.extract_base_dir, file_path), "rb").read()
 
 
-def isfile(file_path):
-    if config.in_memory:
+def isfile(file_path, disk_only=False):
+    if config.in_memory and not disk_only:
         return file_path in filesystem
     else:
         return os.path.isfile(os.path.join(config.extract_base_dir, file_path))
@@ -100,7 +101,5 @@ def compare_data(file_path, first, second):
         return
     self_digest = hashlib.md5(first).hexdigest()
     other_digest = hashlib.md5(second).hexdigest()
-    if self_digest == other_digest:
-        print("WARN: File already exists and has same hash: {}".format(file_path))
-    else:
+    if self_digest != other_digest:
         raise ValueError("ERROR: File already exists and has different hash: {}".format(file_path))
