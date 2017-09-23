@@ -64,7 +64,8 @@ class BDTFile(lib.BinaryFile):
             data = self.read(record.int32('record_size'))
 
             file_cls = self.class_for_data(data)
-            if file_cls is None or record.path.endswith(self.C4110_FILENAME):
+            # todo: figure out why hkxbdt files don't get decoded properly
+            if file_cls is None or record.path.endswith(self.C4110_FILENAME) or record.path.endswith("hkxbdt"):
                 self.log("Writing data for {} to {}".format(record.record_name, record.path), depth)
                 lib.filesystem.write_data(record.path, data)
             elif file_cls == BDTFile:
@@ -105,6 +106,9 @@ class BDTFile(lib.BinaryFile):
                 buffer.seek(0)
                 bdt_data[record.path] = buffer.read()
 
+            manifest_data = record.sub_manifest.get_data(record.sub_manifest.path, depth + 1)
+            lib.filesystem.write_data(record.sub_manifest.path, manifest_data, overwrite=True)
+
         for record_num, record in records:
             self.log("Writing data for record num {}, name {}, actual name = {}".format(
                 record_num,
@@ -116,6 +120,7 @@ class BDTFile(lib.BinaryFile):
             record.header['record_offset'] = self.int32_bytes(cur_position)
             if record.path in bdt_data:
                 self.write(bdt_data[record.path])
+                del bdt_data[record.path]
             elif hasattr(record, 'sub_manifest') and not record.path.endswith(self.C4110_FILENAME):
                 self.write(record.sub_manifest.get_data(record.path, depth + 1))
             else:
@@ -129,7 +134,5 @@ class BDTFile(lib.BinaryFile):
 
         if depth == 1:
             self.log("Writing BDT header for {}".format(self.path), depth)
-            header_path = self.path.rsplit("bdt", 1)[0] + "bhd"
-            if isinstance(manifest, lib.BHD5File):
-                header_path += "5"
+            header_path = os.path.join(os.path.dirname(self.path), os.path.basename(manifest.path))
             manifest.file_cls(open(header_path, "wb"), header_path).create_file(manifest, depth + 1)

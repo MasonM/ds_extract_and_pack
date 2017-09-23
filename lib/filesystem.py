@@ -81,16 +81,16 @@ def isfile(file_path, disk_only=False):
         return os.path.isfile(os.path.join(config.extract_base_dir, file_path))
 
 
-def write_data(file_path, data):
+def write_data(file_path, data, overwrite=False):
     if config.in_memory:
-        if file_path in filesystem:
+        if file_path in filesystem and not overwrite:
             compare_data(file_path, data, filesystem[file_path])
         else:
             filesystem[file_path] = data
     else:
         file_path = os.path.join(config.extract_base_dir, file_path)
         os.makedirs(os.path.dirname(file_path), exist_ok=True)
-        if os.path.isfile(file_path):
+        if os.path.isfile(file_path) and not overwrite:
             compare_data(file_path, data, open(file_path, "rb").read())
         else:
             open(file_path, 'wb').write(data)

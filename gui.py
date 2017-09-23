@@ -165,20 +165,44 @@ class Application(tk.Frame):
 
             config.extract_base_dir = self.extract_base_dir.get()
             recognized = self.extract_files(target_files)
-            if not recognized:
-                if target_type == self.TARGET_TYPE_FILE:
-                    tk.messagebox.showerror("Error", "Unknown file type for " + target)
-                else:
-                    tk.messagebox.showerror("Error", "Not DS data files foudn in " + target)
-                return
+            self.check_extract_output(recognized, target_type)
         elif mode == self.MODE_REPACK:
             if not self.check_directory(self.extract_base_dir.get(), type="extracted files"):
                 return
             if not self.check_directory(self.override_dir.get(), type="texture overrides"):
                 return
-            pass
+
+            config.in_memory = True
+            config.extract_base_dir = self.extract_base_dir.get()
+            recognized = self.extract_files(target_files)
+            if not self.check_extract_output(recognized, target_type):
+                return
+
+            config.in_memory = False
+            for target_path, manifest in recognized:
+                lib.filesystem.write_data(target_path, manifest.get_data(target_path, 1), overwrite=True)
         elif mode == self.MODE_PATCH:
-            pass
+            if not self.check_directory(self.override_dir.get(), type="texture overrides"):
+                return
+
+            config.in_memory = True
+            recognized = self.extract_files(target_files)
+            if not self.check_extract_output(recognized, target_type):
+                return
+
+            config.in_memory = False
+            for target_path, manifest in recognized:
+                lib.filesystem.write_data(target_path, manifest.get_data(target_path, 1), overwrite=True)
+
+    @classmethod
+    def check_extract_output(cls, recognized_files, target_type):
+        if not recognized_files:
+            if target_type == cls.TARGET_TYPE_FILE:
+                tk.messagebox.showerror("Error", "Unknown file type for " + target_type)
+            else:
+                tk.messagebox.showerror("Error", "Not DS data files found in " + target_type)
+            return False
+        return True
 
     @staticmethod
     def check_directory(directory, type):
@@ -191,8 +215,8 @@ class Application(tk.Frame):
         return True
 
     @staticmethod
-    def extract_files(target_files):
-        recognized = []
+    def extract_files(target_files, dump_manifest=True):
+        recognized = {}
         for target in target_files:
             binary_reader = lib.BinaryFile.class_for_filename(target)
             if not binary_reader:
@@ -201,7 +225,7 @@ class Application(tk.Frame):
             manifest = binary_reader.extract_file(depth=1)
             manifest_filename = target.rsplit(".", 1)[0] + ".manifest"
             pickle.dump(manifest, open(manifest_filename, "wb"), protocol=4)
-            recognized.append(target)
+            recognized[target] = manifest
         return recognized
 
     @staticmethod
