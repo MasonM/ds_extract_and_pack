@@ -135,15 +135,23 @@ class Application(tk.Frame):
         frame = tk.Frame(self.master, bd=5)
         frame.grid(row=2, columnspan=2, sticky=tk.N)
 
-        tk.Button(frame, text="Execute", command=self.do_execute).grid(row=0, padx=10)
-        tk.Button(frame, text="Restore Backup", command=self.master.destroy).grid(row=0, column=1)
+        self.execute_button = tk.Button(frame, text="Execute", command=self.execute)
+        self.execute_button.grid(row=0, padx=10)
+
+        self.restore_backup_button = tk.Button(frame, text="Restore Backup", command=self.master.destroy)
+        self.restore_backup_button.grid(row=0, column=1)
 
     def create_log_widgets(self):
-        self.log_widget = tk.scrolledtext.ScrolledText(self.master, wrap=tk.WORD, pady=2, padx=2)
+        self.log_widget = tk.scrolledtext.ScrolledText(self.master, wrap=tk.WORD, pady=2, padx=2, state=tk.DISABLED)
         self.log_widget.grid(row=3, columnspan=2, sticky=tk.NSEW)
+        self.logger = lib.logger.GuiTextLogger(self.log_widget, self.master.update)
 
-    def log(self, msg):
-        self.log_widget.insert(tk.INSERT, msg + "\n")
+    def execute(self):
+        self.execute_button.configure(state=tk.DISABLED)
+        self.restore_backup_button.configure(state=tk.DISABLED)
+        self.do_execute()
+        self.execute_button.configure(state=tk.NORMAL)
+        self.restore_backup_button.configure(state=tk.NORMAL)
 
     def do_execute(self):
         target_type = self.target_type.get()
@@ -171,10 +179,7 @@ class Application(tk.Frame):
 
         config.extract_base_dir = self.extract_base_dir.get()
         config.debug = self.debug.get()
-        if config.debug:
-            config.log_msg_func = lib.logger.GuiTextLogger(self.log_widget).log
-        else:
-            config.log_msg_func = lambda x: x
+        config.log_msg_func = self.logger.log
         config.in_memory = (mode in (self.MODE_REPACK, self.MODE_PATCH))
         config.override_dir = self.override_dir.get()
         found = False
@@ -184,11 +189,11 @@ class Application(tk.Frame):
                 manifest_filename = target_file + ".manifest"
                 if os.path.isfile(manifest_filename):
                     found = True
-                    self.log("Repacking data file {}".format(target_file))
+                    self.logger.log("Repacking data file {}".format(target_file))
                     manifest = pickle.load(open(manifest_filename, "rb"))
                     data = manifest.get_data(target_file, 1)
                     open(target_file + ".repacked", 'wb').write(data)
-                    self.log("Finished repacking data file {}".format(target_file))
+                    self.logger.log("Finished repacking data file {}".format(target_file))
         else:
             if mode == self.MODE_EXTRACT:
                 for target_path in target_files:
@@ -196,21 +201,21 @@ class Application(tk.Frame):
                     if not binary_reader:
                         continue
                     found = True
-                    self.log("Extracting file {} to {}".format(target, config.extract_base_dir))
+                    self.logger.log("Extracting file {} to {}".format(target, config.extract_base_dir))
                     manifest = binary_reader.extract_file(depth=1)
                     pickle.dump(manifest, open(target + ".manifest", "wb"), protocol=4)
-                    self.log("Finished extracting {}".format(target_path))
+                    self.logger.log("Finished extracting {}".format(target_path))
             elif mode == self.MODE_PATCH:
                 for target_path in target_files:
                     binary_reader = lib.BinaryFile.class_for_filename(target_path)
                     if not binary_reader:
                         continue
                     found = True
-                    self.log("Patching file {}".format(target_path))
+                    self.logger.log("Patching file {}".format(target_path))
                     manifest = binary_reader.extract_file(depth=1)
                     data = manifest.get_data(target_path, 1)
                     open(target_path + ".repacked", "wb").write(data)
-                    self.log("Finished patching {}".format(target_path))
+                    self.logger.log("Finished patching {}".format(target_path))
         if not found:
             if target_type == self.TARGET_TYPE_FILE:
                 tk.messagebox.showerror("Error", "Unknown file type for " + target_type)
