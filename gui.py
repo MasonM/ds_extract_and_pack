@@ -23,7 +23,8 @@ class Application(tk.Frame):
 
     def __init__(self, master=None):
         super().__init__(master)
-        self.mode = tk.IntVar(value=self.MODE_EXTRACT)
+        master.title("Dark Souls UnpackNRepack")
+        self.mode = tk.IntVar(value=self.MODE_PATCH)
         self.target = tk.StringVar(value=config.target_file)
         self.target_type = tk.StringVar(value=self.TARGET_TYPE_FILE if config.target_file else self.TARGET_TYPE_ALL)
         self.extract_base_dir = tk.StringVar(value=config.extract_base_dir)
@@ -174,11 +175,17 @@ class Application(tk.Frame):
 
         self.logger.log("Restoring backups...")
         for target_path in target_files:
-            backup_path = target_path + self.BACKUP_SUFFIX
-            if os.path.isfile(backup_path):
-                self.logger.log("Restoring backup for {}".format(target_path))
-                shutil.move(backup_path, target_path)
-        self.logger.log("Finished restoring backups...")
+            self.restore_single_backup(target_path)
+        self.logger.log("Finished restoring backups")
+
+    def restore_single_backup(self, target_path):
+        backup_path = target_path + self.BACKUP_SUFFIX
+        if os.path.isfile(backup_path):
+            self.logger.log("Restoring backup for {}".format(target_path))
+            shutil.move(backup_path, target_path)
+            header_path = lib.filesystem.find_bdt_header_filename(target_path, 1)
+            if header_path:
+                self.restore_single_backup(header_path)
 
     def get_target_files(self):
         target_type = self.target_type.get()
@@ -209,7 +216,7 @@ class Application(tk.Frame):
         config.extract_base_dir = self.extract_base_dir.get()
         config.debug = self.debug.get()
         config.log_msg_func = self.logger.log
-        config.in_memory = (mode in (self.MODE_REPACK, self.MODE_PATCH))
+        config.in_memory = (mode == self.MODE_PATCH)
         config.override_dir = self.override_dir.get()
         found = False
 
@@ -225,11 +232,11 @@ class Application(tk.Frame):
                     continue
                 found = True
                 self.logger.log("Repacking data file {}".format(target_path))
-                if create_backup:
-                    self.do_backup(target_path)
                 manifest = pickle.load(open(manifest_filename, "rb"))
+                if create_backup:
+                    self.do_backup(manifest)
                 data = manifest.get_data(target_path, 1)
-                open(target_path + ".repacked", 'wb').write(data)
+                open(target_path, 'wb').write(data)
                 self.logger.log("Finished repacking data file {}".format(target_path))
         else:
             for target_path in target_files:
@@ -244,11 +251,11 @@ class Application(tk.Frame):
                     self.logger.log("Finished extracting {}".format(target_path))
                 elif mode == self.MODE_PATCH:
                     self.logger.log("Patching file {}".format(target_path))
-                    if create_backup:
-                        self.do_backup(target_path)
                     manifest = binary_reader.extract_file(depth=1)
+                    if create_backup:
+                        self.do_backup(manifest)
                     data = manifest.get_data(target_path, 1)
-                    open(target_path + ".repacked", "wb").write(data)
+                    open(target_path, "wb").write(data)
                     self.logger.log("Finished patching {}".format(target_path))
         if not found:
             target_type = self.target_type.get()
@@ -257,13 +264,17 @@ class Application(tk.Frame):
             else:
                 tk.messagebox.showerror("Error", "No DS data files found in " + target_type)
 
-    def do_backup(self, target_path):
-        self.logger.log("Backing up data file {}".format(target_path))
-        backup_path = target_path + self.BACKUP_SUFFIX
+    def do_backup(self, manifest):
+        self.logger.log("Backing up data file {}".format(manifest.path))
+        backup_path = manifest.path + self.BACKUP_SUFFIX
         if os.path.isfile(backup_path):
             message = "Backup file at {} already exists. Overwrite?".format(backup_path)
-            if tk.messagebox.askyesno("Overwrite backup?", message):
-                shutil.copyfile(target_path, backup_path)
+            if not tk.messagebox.askyesno("Overwrite backup?", message):
+                return
+        shutil.copyfile(manifest.path, backup_path)
+
+        if hasattr(manifest, 'header_manifest'):
+            self.do_backup(manifest.header_manifest)
 
     @staticmethod
     def check_directory(directory, directory_type):
