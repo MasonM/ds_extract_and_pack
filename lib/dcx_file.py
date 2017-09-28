@@ -63,7 +63,7 @@ class DCXFile(lib.BinaryFile):
 
         self.file.seek(manifest.end_header_pos)
 
-        if hasattr(manifest, 'sub_manifest'):
+        if manifest.sub_manifest:
             uncompressed_data = manifest.sub_manifest.get_data(manifest.uncompressed_filename, depth + 1)
         else:
             uncompressed_data = lib.filesystem.read_data(manifest.uncompressed_filename, depth)

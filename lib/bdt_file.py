@@ -13,19 +13,21 @@ class BDTFile(lib.BinaryFile):
     def extract_file(self, depth):
         self.log("Reading file {}".format(self.path), depth)
 
-        self.expect(self.MAGIC_HEADER)
-        self.expect(self.MAGIC_ID)
-        self.expect(0x0, 6)
+        manifest = lib.Manifest(self, header=[
+            ("signature", self.expect(self.MAGIC_HEADER)),
+            ("id", self.expect(self.MAGIC_ID)),
+            ("padding", self.expect(0x0, 6)),
+        ])
 
         if self.path.endswith(self.C4110_FILENAME):
             data = io.BytesIO(fixed_data.c4110_replacement.DATA)
-            manifest = lib.BHF3File(data, self.path[:-3] + "bhd").extract_file(depth + 1)
+            manifest.header_manifest = lib.BHF3File(data, self.path[:-3] + "bhd").extract_file(depth + 1)
         else:
             header_filename = self._get_header_filename(depth)
             self.log("Using header file {}".format(header_filename), depth)
-            manifest = self._get_header_extractor(header_filename, depth).extract_file(depth + 1)
+            manifest.header_manifest = self._get_header_extractor(header_filename, depth).extract_file(depth + 1)
 
-        self._extract_records(manifest.records, depth)
+        self._extract_records(manifest.header_manifest.records, depth)
 
         return manifest
 
@@ -84,15 +86,14 @@ class BDTFile(lib.BinaryFile):
     def create_file(self, manifest, depth):
         self.log("Writing file {}".format(self.path), depth)
 
-        self.write(self.MAGIC_HEADER)
-        self.write(self.MAGIC_ID)
-        self.write(bytearray(6))
+        self.write_header(manifest)
 
-        records = sorted(enumerate(manifest.records), key=lambda r: r[1].int32('record_offset'))
+        header_manifest = manifest.header_manifest
+        records = sorted(enumerate(header_manifest.records), key=lambda r: r[1].int32('record_offset'))
 
         bdt_data = {}
         for record_num, record in records:
-            if not (hasattr(record, 'sub_manifest') and record.record_name.endswith("bdt")):
+            if not record.sub_manifest or record.sub_manifest.file_cls != BDTFile:
                 continue
 
             self.log("Writing BDT data for record num {}, name {}, actual name = {}".format(
@@ -101,12 +102,9 @@ class BDTFile(lib.BinaryFile):
                 record.path
             ), depth)
 
-            with io.BytesIO() as buffer:
-                BDTFile(buffer, record.path).create_file(record.sub_manifest, depth + 1)
-                buffer.seek(0)
-                bdt_data[record.path] = buffer.read()
+            bdt_data[record.path] = record.sub_manifest.get_data(record.path, depth + 1)
 
-            manifest_data = record.sub_manifest.get_data(record.sub_manifest.path, depth + 1)
+            manifest_data = record.sub_manifest.header_manifest.get_data(record.sub_manifest.path, depth + 1)
             lib.filesystem.write_data(record.sub_manifest.path, manifest_data, overwrite=True)
 
         for record_num, record in records:
@@ -121,7 +119,7 @@ class BDTFile(lib.BinaryFile):
             if record.path in bdt_data:
                 self.write(bdt_data[record.path])
                 del bdt_data[record.path]
-            elif hasattr(record, 'sub_manifest') and not record.path.endswith(self.C4110_FILENAME):
+            elif record.sub_manifest and not record.path.endswith(self.C4110_FILENAME):
                 self.write(record.sub_manifest.get_data(record.path, depth + 1))
             else:
                 self.write(lib.filesystem.read_data(record.path, depth))
@@ -134,5 +132,5 @@ class BDTFile(lib.BinaryFile):
 
         if depth == 1:
             self.log("Writing BDT header for {}".format(self.path), depth)
-            header_path = os.path.join(os.path.dirname(self.path), os.path.basename(manifest.path))
-            manifest.file_cls(open(header_path, "wb"), header_path).create_file(manifest, depth + 1)
+            header_path = os.path.join(os.path.dirname(self.path), os.path.basename(header_manifest.path))
+            open(header_path, "wb").write(header_manifest.get_data(header_path, depth + 1))

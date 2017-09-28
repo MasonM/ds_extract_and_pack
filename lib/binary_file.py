@@ -83,6 +83,7 @@ class Manifest:
         self.path = binary_file_reader.path
         self.endian = binary_file_reader.endian
         self.header = OrderedDict(header)
+        self.sub_manifest = None
 
     def int32(self, key):
         return int.from_bytes(self.header[key], byteorder=self.endian, signed=False)

@@ -88,7 +88,7 @@ class BND3File(lib.BinaryFile):
             self.log("Writing record data for {}".format(record.path), depth)
             record.header['data_offset'] = self.int32_bytes(cur_position)
 
-            if hasattr(record, 'sub_manifest'):
+            if record.sub_manifest:
                 self.write(record.sub_manifest.get_data(record.path, depth + 1))
             else:
                 self.write(lib.filesystem.read_data(record.path, depth))
