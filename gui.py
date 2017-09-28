@@ -1,9 +1,10 @@
 import os
 import pickle
+import shutil
 import tkinter as tk
 import tkinter.filedialog
-import tkinter.scrolledtext
 import tkinter.messagebox
+import tkinter.scrolledtext
 import tkinter.ttk as ttk
 
 import config
@@ -18,6 +19,8 @@ class Application(tk.Frame):
     TARGET_TYPE_ALL = "All data files in directory"
     TARGET_TYPE_FILE = "Specific data file"
 
+    BACKUP_SUFFIX = ".dsenp.backup"
+
     def __init__(self, master=None):
         super().__init__(master)
         self.mode = tk.IntVar(value=self.MODE_EXTRACT)
@@ -26,6 +29,7 @@ class Application(tk.Frame):
         self.extract_base_dir = tk.StringVar(value=config.extract_base_dir)
         self.override_dir = tk.StringVar(value=config.override_dir)
         self.debug = tk.BooleanVar(value=config.debug)
+        self.create_backup = tk.BooleanVar(value=True)
 
         self.master.columnconfigure(0, weight=1)
         self.master.columnconfigure(1, weight=1)
@@ -87,12 +91,15 @@ class Application(tk.Frame):
         if mode == self.MODE_EXTRACT:
             self.override_dir_frame.grid_remove()
             self.extract_base_dir_frame.grid()
+            self.backup_frame.grid_remove()
         elif mode == self.MODE_REPACK:
             self.override_dir_frame.grid()
             self.extract_base_dir_frame.grid()
+            self.backup_frame.grid()
         elif mode == self.MODE_PATCH:
             self.override_dir_frame.grid()
             self.extract_base_dir_frame.grid_remove()
+            self.backup_frame.grid()
 
     def create_option_widgets(self):
         label_frame = tk.LabelFrame(self.master, text="Options", bd=1, relief=tk.RAISED)
@@ -101,16 +108,23 @@ class Application(tk.Frame):
 
         self.extract_base_dir_frame = tk.Frame(label_frame, bd=5)
         self.extract_base_dir_frame.grid(row=2, sticky=tk.EW)
-        self.create_filedir_widgets(self.extract_base_dir_frame, self.extract_base_dir, "Base directory for extracted files")
+        self.create_filedir_widgets(frame=self.extract_base_dir_frame, string_var=self.extract_base_dir,
+                                    label="Base directory for extracted files")
 
         self.override_dir_frame = tk.Frame(label_frame, bd=5)
         self.override_dir_frame.grid(row=3, sticky=tk.EW)
-        self.create_filedir_widgets(self.override_dir_frame, self.override_dir, "Texture override directory (optional)")
+        self.create_filedir_widgets(frame=self.override_dir_frame, string_var=self.override_dir,
+                                    label="Texture override directory (optional)")
 
         debug_frame = tk.Frame(label_frame, bd=5)
         debug_frame.grid(row=4, sticky=tk.EW)
         tk.Label(debug_frame, text="Debug", width=20).grid(row=0, sticky=tk.E)
         tk.Checkbutton(debug_frame, variable=self.debug).grid(row=0, column=1, sticky=tk.EW)
+
+        self.backup_frame = tk.Frame(label_frame, bd=5)
+        self.backup_frame.grid(row=5, sticky=tk.EW)
+        tk.Label(self.backup_frame, text="Create Backup", width=20).grid(row=0, sticky=tk.E)
+        tk.Checkbutton(self.backup_frame, variable=self.create_backup).grid(row=0, column=1, sticky=tk.EW)
 
     def create_filedir_widgets(self, frame, string_var, label=None, callback=None):
         callback = callback or self.dir_button_click
@@ -138,7 +152,7 @@ class Application(tk.Frame):
         self.execute_button = tk.Button(frame, text="Execute", command=self.execute)
         self.execute_button.grid(row=0, padx=10)
 
-        self.restore_backup_button = tk.Button(frame, text="Restore Backup", command=self.master.destroy)
+        self.restore_backup_button = tk.Button(frame, text="Restore Backup", command=self.restore_backup)
         self.restore_backup_button.grid(row=0, column=1)
 
     def create_log_widgets(self):
@@ -153,28 +167,43 @@ class Application(tk.Frame):
         self.execute_button.configure(state=tk.NORMAL)
         self.restore_backup_button.configure(state=tk.NORMAL)
 
-    def do_execute(self):
+    def restore_backup(self):
+        target_files = self.get_target_files()
+        if not target_files:
+            return
+
+        self.logger.log("Restoring backups...")
+        for target_path in target_files:
+            backup_path = target_path + self.BACKUP_SUFFIX
+            if os.path.isfile(backup_path):
+                self.logger.log("Restoring backup for {}".format(target_path))
+                shutil.move(backup_path, target_path)
+        self.logger.log("Finished restoring backups...")
+
+    def get_target_files(self):
         target_type = self.target_type.get()
         target = self.target.get()
         if target_type == self.TARGET_TYPE_FILE:
             if not target:
                 tk.messagebox.showerror("Error", "Must set target file")
-                return
+                return None
             if not os.path.isfile(target):
                 tk.messagebox.showerror("Error", "Target is not a file")
-                return
-            target_files = [target]
+                return None
+            return [target]
         else:
-            if not self.check_directory(target, type="target"):
-                return
-            target_files = os.listdir(target)
+            if not self.check_directory(target, directory_type="target"):
+                return None
+            return os.listdir(target)
 
+    def do_execute(self):
         mode = self.mode.get()
         if mode in (self.MODE_EXTRACT, self.MODE_REPACK) and \
-                not self.check_directory(self.extract_base_dir.get(), type="extracted files"):
+                not self.check_directory(self.extract_base_dir.get(), directory_type="extracted files"):
             return
 
-        if mode == self.MODE_PATCH and not self.check_directory(self.override_dir.get(), type="texture overrides"):
+        if mode == self.MODE_PATCH and \
+                not self.check_directory(self.override_dir.get(), directory_type="texture overrides"):
             return
 
         config.extract_base_dir = self.extract_base_dir.get()
@@ -184,51 +213,65 @@ class Application(tk.Frame):
         config.override_dir = self.override_dir.get()
         found = False
 
+        target_files = self.get_target_files()
+        if not target_files:
+            return
+
+        create_backup = self.create_backup.get()
         if mode == self.MODE_REPACK:
-            for target_file in target_files:
-                manifest_filename = target_file + ".manifest"
-                if os.path.isfile(manifest_filename):
-                    found = True
-                    self.logger.log("Repacking data file {}".format(target_file))
-                    manifest = pickle.load(open(manifest_filename, "rb"))
-                    data = manifest.get_data(target_file, 1)
-                    open(target_file + ".repacked", 'wb').write(data)
-                    self.logger.log("Finished repacking data file {}".format(target_file))
+            for target_path in target_files:
+                manifest_filename = target_path + ".manifest"
+                if not os.path.isfile(manifest_filename):
+                    continue
+                found = True
+                self.logger.log("Repacking data file {}".format(target_path))
+                if create_backup:
+                    self.do_backup(target_path)
+                manifest = pickle.load(open(manifest_filename, "rb"))
+                data = manifest.get_data(target_path, 1)
+                open(target_path + ".repacked", 'wb').write(data)
+                self.logger.log("Finished repacking data file {}".format(target_path))
         else:
-            if mode == self.MODE_EXTRACT:
-                for target_path in target_files:
-                    binary_reader = lib.BinaryFile.class_for_filename(target_path)
-                    if not binary_reader:
-                        continue
-                    found = True
-                    self.logger.log("Extracting file {} to {}".format(target, config.extract_base_dir))
+            for target_path in target_files:
+                binary_reader = lib.BinaryFile.class_for_filename(target_path)
+                if not binary_reader:
+                    continue
+                found = True
+                if mode == self.MODE_EXTRACT:
+                    self.logger.log("Extracting file {} to {}".format(target_path, config.extract_base_dir))
                     manifest = binary_reader.extract_file(depth=1)
-                    pickle.dump(manifest, open(target + ".manifest", "wb"), protocol=4)
+                    pickle.dump(manifest, open(target_path + ".manifest", "wb"), protocol=4)
                     self.logger.log("Finished extracting {}".format(target_path))
-            elif mode == self.MODE_PATCH:
-                for target_path in target_files:
-                    binary_reader = lib.BinaryFile.class_for_filename(target_path)
-                    if not binary_reader:
-                        continue
-                    found = True
+                elif mode == self.MODE_PATCH:
                     self.logger.log("Patching file {}".format(target_path))
+                    if create_backup:
+                        self.do_backup(target_path)
                     manifest = binary_reader.extract_file(depth=1)
                     data = manifest.get_data(target_path, 1)
                     open(target_path + ".repacked", "wb").write(data)
                     self.logger.log("Finished patching {}".format(target_path))
         if not found:
+            target_type = self.target_type.get()
             if target_type == self.TARGET_TYPE_FILE:
                 tk.messagebox.showerror("Error", "Unknown file type for " + target_type)
             else:
                 tk.messagebox.showerror("Error", "No DS data files found in " + target_type)
 
+    def do_backup(self, target_path):
+        self.logger.log("Backing up data file {}".format(target_path))
+        backup_path = target_path + self.BACKUP_SUFFIX
+        if os.path.isfile(backup_path):
+            message = "Backup file at {} already exists. Overwrite?".format(backup_path)
+            if tk.messagebox.askyesno("Overwrite backup?", message):
+                shutil.copyfile(target_path, backup_path)
+
     @staticmethod
-    def check_directory(directory, type):
+    def check_directory(directory, directory_type):
         if not directory:
-            tk.messagebox.showerror("Error", "Must set base directory for " + type)
+            tk.messagebox.showerror("Error", "Must set base directory for " + directory_type)
             return False
         elif not os.path.isdir(directory):
-            tk.messagebox.showerror("Error", "Invalid base directory for " + type)
+            tk.messagebox.showerror("Error", "Invalid base directory for " + directory_type)
             return False
         return True
 
