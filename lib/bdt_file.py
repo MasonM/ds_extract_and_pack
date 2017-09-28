@@ -23,7 +23,9 @@ class BDTFile(lib.BinaryFile):
             data = io.BytesIO(fixed_data.c4110_replacement.DATA)
             manifest.header_manifest = lib.BHF3File(data, self.path[:-3] + "bhd").extract_file(depth + 1)
         else:
-            header_filename = self._get_header_filename(depth)
+            header_filename = lib.filesystem.find_bdt_header_filename(self.path, depth)
+            if not header_filename:
+                raise FileNotFoundError("Got no results searching for BHD for BDT {}".format(self.path))
             self.log("Using header file {}".format(header_filename), depth)
             manifest.header_manifest = self._get_header_extractor(header_filename, depth).extract_file(depth + 1)
 
@@ -43,20 +45,6 @@ class BDTFile(lib.BinaryFile):
             raise RuntimeError("Invalid signature in header file: {}".format(header_filename))
 
         return file_cls(io.BytesIO(header_data), header_filename)
-
-    def _get_header_filename(self, depth):
-        path = self.path.rsplit("bdt", 1)[0] + "bhd"
-        if lib.filesystem.isfile(path + "5", disk_only=(depth == 1)):
-            return path + "5"  # bhd5 header
-
-        if not lib.filesystem.isfile(path, disk_only=(depth == 1)):
-            basename, ext = os.path.basename(path).rsplit('.', 1)
-            path = os.sep.join([os.path.dirname(path), basename, basename + "." + ext])
-
-            if not lib.filesystem.isfile(path):
-                raise FileNotFoundError("Got no results searching for BHD for BDT {} in {}".format(self.path, path))
-
-        return path
 
     def _extract_records(self, records, depth):
         for record_num, record in enumerate(records):

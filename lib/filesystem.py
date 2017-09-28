@@ -103,3 +103,18 @@ def compare_data(file_path, first, second):
     other_digest = hashlib.md5(second).hexdigest()
     if self_digest != other_digest:
         raise ValueError("ERROR: File already exists and has different hash: {}".format(file_path))
+
+
+def find_bdt_header_filename(path, depth):
+    header_path = path.rsplit("bdt", 1)[0] + "bhd"
+    if isfile(header_path + "5", disk_only=(depth == 1)):
+        return header_path + "5"  # bhd5 header
+
+    if not isfile(path, disk_only=(depth == 1)):
+        basename, ext = os.path.basename(header_path).rsplit('.', 1)
+        header_path = os.sep.join([os.path.dirname(header_path), basename, basename + "." + ext])
+
+        if not isfile(header_path):
+            return None
+
+    return header_path
