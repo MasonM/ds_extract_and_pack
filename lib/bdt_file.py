@@ -104,8 +104,9 @@ class BDTFile(lib.BinaryFile):
 
             bdt_data[record.path] = record.sub_manifest.get_data(record.path, depth + 1)
 
-            manifest_data = record.sub_manifest.header_manifest.get_data(record.sub_manifest.path, depth + 1)
-            lib.filesystem.write_data(record.sub_manifest.path, manifest_data, overwrite=True)
+            record_header_manifest = record.sub_manifest.header_manifest
+            manifest_data = record_header_manifest.get_data(record_header_manifest.path, depth + 1)
+            lib.filesystem.write_data(record_header_manifest.path, manifest_data, overwrite=True)
 
         for record_num, record in records:
             self.log("Writing data for record num {}, name {}, actual name = {}".format(
