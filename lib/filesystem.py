@@ -12,6 +12,10 @@ dupe_counter = {}
 name_hash_cache = {}
 
 
+def clear_all():
+    filesystem = {}
+    dupe_counter = {}
+
 def get_hash_from_string(s):
     hash_val = 0
     for char in s.lower():
@@ -65,7 +69,11 @@ def normalize_filepath(path, base_path):
 
 def read_data(file_path, depth):
     if config.override_dir:
-        override_file_path = os.path.join(config.override_dir, file_path)
+        if file_path.startswith(config.data_base_dir):
+            relative_file_path = file_path[len(config.data_base_dir) + 1:]
+        else:
+            relative_file_path = file_path
+        override_file_path = os.path.join(config.override_dir, relative_file_path)
         if os.path.isfile(override_file_path):
             lib.logger.log("Using override path {}".format(override_file_path), depth)
             return open(override_file_path, "rb").read()
@@ -107,14 +115,15 @@ def compare_data(file_path, first, second):
 
 def find_bdt_header_filename(path, depth):
     header_path = path.rsplit("bdt", 1)[0] + "bhd"
-    if isfile(header_path + "5", disk_only=(depth == 1)):
+    is_top_level_bdt = (depth == 1)
+    if isfile(header_path + "5", disk_only=is_top_level_bdt):
         return header_path + "5"  # bhd5 header
 
-    if not isfile(path, disk_only=(depth == 1)):
+    if not isfile(header_path, disk_only=is_top_level_bdt):
         basename, ext = os.path.basename(header_path).rsplit('.', 1)
         header_path = os.sep.join([os.path.dirname(header_path), basename, basename + "." + ext])
 
-        if not isfile(header_path):
+        if not isfile(header_path, disk_only=is_top_level_bdt):
             return None
 
     return header_path

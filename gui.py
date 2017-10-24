@@ -23,17 +23,19 @@ class Application(tk.Frame):
 
     def __init__(self, master=None):
         super().__init__(master)
-        master.title("Dark Souls UnpackNRepack")
+        master.title("Dark Souls Extract&Pack")
         self.mode = tk.IntVar(value=self.MODE_PATCH)
         self.target = tk.StringVar(value=config.target_file)
-        self.target_type = tk.StringVar(value=self.TARGET_TYPE_FILE if config.target_file else self.TARGET_TYPE_ALL)
+        self.target_type = tk.StringVar(value=self.TARGET_TYPE_FILE)
+        if config.target_file and os.path.isdir(config.target_file):
+            self.target_type.set(self.TARGET_TYPE_ALL)
         self.extract_base_dir = tk.StringVar(value=config.extract_base_dir)
         self.override_dir = tk.StringVar(value=config.override_dir)
         self.debug = tk.BooleanVar(value=config.debug)
         self.create_backup = tk.BooleanVar(value=True)
 
         self.master.columnconfigure(0, weight=1)
-        self.master.columnconfigure(1, weight=1)
+        self.master.columnconfigure(1, weight=10)
         self.master.rowconfigure(0, weight=1, pad=15)
         self.master.rowconfigure(1, weight=1, pad=15)
         self.master.rowconfigure(2, weight=10, pad=15)
@@ -190,6 +192,7 @@ class Application(tk.Frame):
     def get_target_files(self):
         target_type = self.target_type.get()
         target = self.target.get()
+        target_files = []
         if target_type == self.TARGET_TYPE_FILE:
             if not target:
                 tk.messagebox.showerror("Error", "Must set target file")
@@ -197,11 +200,18 @@ class Application(tk.Frame):
             if not os.path.isfile(target):
                 tk.messagebox.showerror("Error", "Target is not a file")
                 return None
-            return [target]
+            target_files.append(target)
         else:
             if not self.check_directory(target, directory_type="target"):
                 return None
-            return os.listdir(target)
+            for file in os.listdir(target):
+                file = os.path.join(target, file)
+                if not os.path.isfile(file):
+                    continue
+                if file.endswith(self.BACKUP_SUFFIX):
+                    continue
+                target_files.append(file)
+        return target_files
 
     def do_execute(self):
         mode = self.mode.get()
@@ -224,45 +234,62 @@ class Application(tk.Frame):
         if not target_files:
             return
 
-        create_backup = self.create_backup.get()
+        config.data_base_dir = self.target.get()
+        if self.target_type.get() == self.TARGET_TYPE_FILE:
+            config.data_base_dir = os.path.dirname(config.data_base_dir)
+
         if mode == self.MODE_REPACK:
             for target_path in target_files:
+                lib.filesystem.clear_all()
                 manifest_filename = target_path + ".manifest"
                 if not os.path.isfile(manifest_filename):
                     continue
                 found = True
-                self.logger.log("Repacking data file {}".format(target_path))
-                manifest = pickle.load(open(manifest_filename, "rb"))
-                if create_backup:
-                    self.do_backup(manifest)
-                data = manifest.get_data(target_path, 1)
-                open(target_path, 'wb').write(data)
-                self.logger.log("Finished repacking data file {}".format(target_path))
+                self.do_repack(manifest_filename, target_path)
         else:
             for target_path in target_files:
+                lib.filesystem.clear_all()
                 binary_reader = lib.BinaryFile.class_for_filename(target_path)
                 if not binary_reader:
                     continue
                 found = True
                 if mode == self.MODE_EXTRACT:
-                    self.logger.log("Extracting file {} to {}".format(target_path, config.extract_base_dir))
-                    manifest = binary_reader.extract_file(depth=1)
-                    pickle.dump(manifest, open(target_path + ".manifest", "wb"), protocol=4)
-                    self.logger.log("Finished extracting {}".format(target_path))
+                    self.do_extract(binary_reader, target_path)
                 elif mode == self.MODE_PATCH:
-                    self.logger.log("Patching file {}".format(target_path))
-                    manifest = binary_reader.extract_file(depth=1)
-                    if create_backup:
-                        self.do_backup(manifest)
-                    data = manifest.get_data(target_path, 1)
-                    open(target_path, "wb").write(data)
-                    self.logger.log("Finished patching {}".format(target_path))
+                    self.do_patch(binary_reader, target_path)
         if not found:
             target_type = self.target_type.get()
             if target_type == self.TARGET_TYPE_FILE:
                 tk.messagebox.showerror("Error", "Unknown file type for " + target_type)
             else:
                 tk.messagebox.showerror("Error", "No DS data files found in " + target_type)
+        else:
+            self.logger.log("All done!")
+
+    def do_repack(self, manifest_filename, target_path):
+        self.logger.log("Repacking data file {}".format(target_path))
+        manifest = pickle.load(open(manifest_filename, "rb"))
+        if self.create_backup.get():
+            self.do_backup(manifest)
+        data = manifest.get_data(target_path, 1)
+        open(target_path, 'wb').write(data)
+        self.logger.log("Finished repacking data file {}\n".format(target_path))
+
+    def do_extract(self, binary_reader, target_path):
+        self.logger.log("Extracting file {} to {}".format(target_path, config.extract_base_dir))
+        manifest = binary_reader.extract_file(depth=1)
+        pickle.dump(manifest, open(target_path + ".manifest", "wb"), protocol=4)
+        self.logger.log("Finished extracting {}\n".format(target_path))
+
+    def do_patch(self, binary_reader, target_path):
+        self.logger.log("Reading file {} (this will take awhile)".format(target_path))
+        manifest = binary_reader.extract_file(depth=1)
+        if self.create_backup.get():
+            self.do_backup(manifest)
+        self.logger.log("Patching file {}".format(target_path))
+        data = manifest.get_data(target_path, 1)
+        open(target_path, "wb").write(data)
+        self.logger.log("Finished patching {}\n".format(target_path))
 
     def do_backup(self, manifest):
         self.logger.log("Backing up data file {}".format(manifest.path))

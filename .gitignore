@@ -1,4 +1,8 @@
+/.idea/
 __pycache__/
-/test/
+/overrides/
+/unpacked/
 /test_output/
 /test_files/
+/build/
+/dist/

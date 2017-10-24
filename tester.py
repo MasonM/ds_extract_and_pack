@@ -6,8 +6,8 @@ import shutil
 import config
 from lib import BDTFile, BHD5File, BHF3File, BND3File, DCXFile, TPFFile
 
-extract_base_dir = os.path.abspath("test")
-second_extract_base_dir = os.path.abspath("second_test")
+extract_base_dir = os.path.abspath("unpacked")
+second_extract_base_dir = os.path.abspath("second_unpacked")
 output_base_dir = os.path.abspath("test_output")
 separator = "-" * 200
 
