@@ -30,7 +30,7 @@ def is_valid(img_file):
     try:
         color_type, width, channel_mean, compression = command_output.split(',')
 
-        if compression == "none":
+        if compression.lower() == "none":
             print("\tskip: unable to determine compression format (corruption?)")
             return False
 
@@ -77,9 +77,6 @@ def jpg_to_dds(jpg_path, orig_dds_path, output_path):
                 final_img.format = "dds"
                 # Seems orig_dds.compression always returns bzip
                 compression_type = subprocess.check_output(["/usr/bin/identify", "-format", "%C", orig_dds_path]).decode("ascii").lower()
-                if compression_type != orig_dds.compression:
-                    print("FOUND: {} != {}".format(compression_type, orig_dds.compression))
-                    sys.exit(0)
                 print("\tcompression type: {}".format(compression_type))
                 final_img.compression = compression_type
                 final_img.resize(orig_dds.width, orig_dds.height)

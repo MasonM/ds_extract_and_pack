@@ -76,8 +76,15 @@ dcx_file = "mystery."
 #bdt_file = "good_c4100.chrtpf"
 bdt_file = "dvdbnd0."
 
-test = "bdt"
+test = "manual"
 
+if test == "manual":
+    config.extract_base_dir = extract_base_dir
+    dir_prep(extract_base_dir)
+    for file in ["dvdbnd0", "dvdbnd1"]:
+        path = os.path.join("test_files", file + ".bdt")
+        path = os.path.abspath(path)
+        manifest = BDTFile(open(path, "rb"), path).extract_file(depth=1)
 if test == "tpf":
     do_read_write_test(tpf_file + "tpf", TPFFile)
 elif test == "bnd3":
