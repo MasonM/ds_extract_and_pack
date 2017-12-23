@@ -1,10 +1,10 @@
-from texture_fetcher import texture_utils
+from . import texture_utils
 import glob
 import os
 import random
 import shutil
 
-base_dir = "/home/masonm/src/darksouls/ds_extract_and_pack"
+base_dir = os.curdir
 texture_extract_dir = base_dir + "/unpacked"
 overrides_dir = base_dir + "/overrides"
 image_corpus_dir = base_dir + "/corpus"

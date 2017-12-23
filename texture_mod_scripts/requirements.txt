@@ -1,0 +1,4 @@
+Wand>=0.4.4
+requests>=2.18.4
+Pillow>=2.0.0
+flickrapi>=2.3.1
