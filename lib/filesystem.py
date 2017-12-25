@@ -13,8 +13,11 @@ name_hash_cache = {}
 
 
 def clear_all():
+    global filesystem
+    global dupe_counter
     filesystem = {}
     dupe_counter = {}
+
 
 def get_hash_from_string(s):
     hash_val = 0
