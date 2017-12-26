@@ -1,7 +1,7 @@
 # Overview
 
 Dark Souls Extract &amp; Pack is a tool to unpack and repack data files for Dark Souls 1, allowing mods to be easily distributed without depending on other mods, such as [DSFix](https://www.nexusmods.com/darksouls/mods/19/?). It has full read/write support for the following file formats:
-* BDF3 (i.e. BDT) with either header format ()BHD5 or BHF3)
+* BDF3 (i.e. BDT) with either header format (BHD5 or BHF3)
 * BND3
 * DCX
 * TPF
@@ -12,7 +12,7 @@ It can be used to easily replace every texture in the game, without having to ma
 
 To use the GUI, download and launch the latest version of dsextractnpack.exe from [the Releases page](https://github.com/MasonM/ds_extract_and_pack/releases).
 
-![GUI Screenshot](gui.png)
+<img src="gui.png" width="500" alt="GUI Screenshot">
 
 The **Mode** section controls the operation to perform, and the **Target** specifies the data file(s) to perform it on. The **Options** section changes depending on the selected mode. There are three modes:
 
