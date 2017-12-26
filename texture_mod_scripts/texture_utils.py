@@ -1,11 +1,16 @@
+"""
+Various utility functions for dealing with textures
+"""
+
 import re
-import sys
-import os
 import subprocess
 from wand.image import Image
 
 
 def is_valid(img_file):
+    """
+    Checks if the texture file given by img_file is something that is a good candidate for replacement.
+    """
     # Don't try to convert fonts or menu textures, since that messes up the game
     if "/font/" in img_file or "/menu/" in img_file:
         print("\tskip: font or menu texture")

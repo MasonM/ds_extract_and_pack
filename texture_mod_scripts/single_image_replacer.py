@@ -1,4 +1,9 @@
-from . import texture_utils
+"""
+Script to replace every single extracted texture (set by "texture_extract_dir") with a
+given image (set by "image"), and write the results to the directory set by "overrides_dir".
+"""
+
+from texture_mod_scripts import texture_utils
 import glob
 import os
 import shutil

@@ -1,9 +1,12 @@
-#!/usr/bin/env python
+"""
+This is a simple script to fetch ~3600 photos from the Flickr API, enough to to replace every
+eligible DS texture (as determined by the texture_utils.is_valid() function).
 
-# This is a simple script to fetch ~3600 photos from the Flickr API, enough to to replace every
-# eligible DS texture.
-#
-# Use this with random_image_replacer.py to randomly replace textures with one of the images
+Reads the API key and secret from the file "flickr_creds.txt". The API key should be the first line
+and the secret should be on the second line.
+
+Use this with random_image_replacer.py to randomly replace textures with one of the downloaded images.
+"""
 
 import os
 import flickrapi

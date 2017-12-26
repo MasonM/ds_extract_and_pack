@@ -1,3 +1,7 @@
+"""
+Script for manually testing extraction and packing
+"""
+
 import filecmp
 import os
 import pickle

@@ -1,4 +1,5 @@
-; Script to run the "Make seamless" plugin on every JPG, making them tileable
+; Gimp Batch script to run the "Make seamless" plugin on every JPG, making them tileable
+; Use it via "cat gimp_batch_seamless.scm | gimp -i -b -"
 (let* ((filelist (cadr (file-glob "*.jpg" 1))))
 	(while (not (null? filelist))
 	     (let* ((filename (car filelist))
