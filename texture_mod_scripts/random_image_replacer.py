@@ -1,4 +1,12 @@
-from . import texture_utils
+"""
+Script to randomly replace extracted textures (set by "texture_extract_dir") with one of the
+JPEGs in the directory set by "image_corpus_dir", and write the results to the directory set by
+"overrides_dir".
+
+Prevents duplicate mappings (i.e. only one JPEG gets mapped to each texture)
+"""
+
+from texture_mod_scripts import texture_utils
 import glob
 import os
 import random
