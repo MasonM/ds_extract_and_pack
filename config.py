@@ -15,5 +15,5 @@ try:
     steam_dir = winreg.QueryValueEx(steam_dir_key, "SteamPath")[0]
     target_file = os.path.join(steam_dir, "SteamApps", "Common", "Dark Souls Prepare to Die Edition", "DATA")
     target_file = os.path.abspath(target_file)
-except ImportError:
+except (ImportError, OSError):
     target_file = None
