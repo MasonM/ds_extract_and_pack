@@ -1,6 +1,8 @@
 import os
 import pickle
+import queue
 import shutil
+import threading
 import tkinter as tk
 import tkinter.filedialog
 import tkinter.messagebox
@@ -33,6 +35,7 @@ class Application(tk.Frame):
         self.override_dir = tk.StringVar(value=config.override_dir)
         self.debug = tk.BooleanVar(value=config.debug)
         self.create_backup = tk.BooleanVar(value=True)
+        self.queue = queue.Queue()
 
         self.master.columnconfigure(0, weight=1)
         self.master.columnconfigure(1, weight=10)
@@ -163,12 +166,31 @@ class Application(tk.Frame):
         self.log_widget.grid(row=3, columnspan=2, sticky=tk.NSEW)
         self.logger = lib.logger.GuiTextLogger(self.log_widget, self.master.update)
 
+    def process_queue(self):
+        try:
+            self.queue.get(False)
+            self.toggle_buttons(True)
+        except queue.Empty:
+            self.master.after(100, self.process_queue)
+
     def execute(self):
-        self.execute_button.configure(state=tk.DISABLED)
-        self.restore_backup_button.configure(state=tk.DISABLED)
-        self.do_execute()
-        self.execute_button.configure(state=tk.NORMAL)
-        self.restore_backup_button.configure(state=tk.NORMAL)
+        if not self.validate_mode():
+            return
+        target_files = self.get_target_files()
+        if not target_files:
+            return
+        self.toggle_buttons(False)
+        self.populate_config()
+        thread = threading.Thread(
+            target=self.do_execute,
+            kwargs={'target_files': target_files}
+        )
+        thread.start()
+        self.master.after(100, self.process_queue)
+
+    def toggle_buttons(self, enable=True):
+        self.execute_button.configure(state=tk.NORMAL if enable else tk.DISABLED)
+        self.restore_backup_button.configure(state=tk.NORMAL if enable else tk.DISABLED)
 
     def restore_backup(self):
         target_files = self.get_target_files()
@@ -213,30 +235,31 @@ class Application(tk.Frame):
                 target_files.append(file)
         return target_files
 
-    def do_execute(self):
+    def validate_mode(self):
         mode = self.mode.get()
         if mode in (self.MODE_EXTRACT, self.MODE_REPACK) and \
                 not self.check_directory(self.extract_base_dir.get(), directory_type="extracted files"):
-            return
+            return False
 
         if mode == self.MODE_PATCH and \
                 not self.check_directory(self.override_dir.get(), directory_type="texture overrides"):
-            return
+            return False
 
+        return True
+
+    def populate_config(self):
         config.extract_base_dir = self.extract_base_dir.get()
         config.debug = self.debug.get()
         config.log_msg_func = self.logger.log
-        config.in_memory = (mode == self.MODE_PATCH)
+        config.in_memory = (self.mode.get() == self.MODE_PATCH)
         config.override_dir = self.override_dir.get()
-        found = False
-
-        target_files = self.get_target_files()
-        if not target_files:
-            return
-
         config.data_base_dir = self.target.get()
         if self.target_type.get() == self.TARGET_TYPE_FILE:
             config.data_base_dir = os.path.dirname(config.data_base_dir)
+
+    def do_execute(self, target_files):
+        mode = self.mode.get()
+        found = False
 
         if mode == self.MODE_REPACK:
             for target_path in target_files:
@@ -265,6 +288,7 @@ class Application(tk.Frame):
                 tk.messagebox.showerror("Error", "No DS data files found in " + target_type)
         else:
             self.logger.log("All done!")
+        self.queue.put("Done")
 
     def do_repack(self, manifest_filename, target_path):
         self.logger.log("Repacking data file {}".format(target_path))

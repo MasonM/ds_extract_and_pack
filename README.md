@@ -20,8 +20,6 @@ The **Mode** section controls the operation to perform, and the **Target** speci
 2. **Repack data files** - Repacks (i.e. re-bundles) data files in the "Base directory for extracted files", optionally using overrides in the directory given by the **Texture override directory** setting.
 3. **Patch data files** - Updates the data files in-place using the overrides in the directory given by the "Texture override directory"
 
-The app will appear to freeze after starting one of the three modes, because I'm too lazy to add threading. Just wait for it.
-
 The **Create Backup** option is available in the "Repack data files" and "Patch data files" modes, and copies each affected file before modifying it. Use the **Restore Backup** button to restore the backups.
 
 TODO: Document texture_mod_scripts
