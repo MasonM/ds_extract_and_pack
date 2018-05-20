@@ -39,17 +39,17 @@ def is_valid(img_file):
             print("\tskip: unable to determine compression format (corruption?)")
             return False
 
-        if int(width) < 64:
-            print("\tskip: too small, width = {}".format(int(width)))
-            return False
+        #if int(width) < 64:
+        #    print("\tskip: too small, width = {}".format(int(width)))
+        #    return False
 
-        if color_type.lower() in ("grayscale", "grayscalematte"):
-            print("\tskip: gray, probably text")
-            return False
+        #if color_type.lower() in ("grayscale", "grayscalematte"):
+        #    print("\tskip: gray, probably text")
+        #    return False
 
-        if float(channel_mean) > 65530:
-            print("\tskip: mostly one color (alpha mask?)")
-            return False
+        #if float(channel_mean) > 65530:
+        #    print("\tskip: mostly one color (alpha mask?)")
+        #    return False
     except ValueError:
         print("\tskip: got valuerror for {}".format(img_file))
         return False
